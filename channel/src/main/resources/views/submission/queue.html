@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Grading queue','courses', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/courses/{id}(id=${course.getId()})}" th:text="${course.getTitle()}">Course</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <a th:href="@{/assignments/{id}(id=${assignment.getId()})}" th:text="${assignment.getTitle()}">Assignment</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span>Submissions</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker">Grading queue</div>
+            <h1 th:text="${assignment.getTitle()}">Assignment</h1>
+            <p class="sub">Filter, search and open submissions for grading.</p>
+        </div>
+        <a class="btn btn-secondary" th:href="@{/assignments/{id}(id=${assignment.getId()})}">← Back to assignment</a>
+    </div>
+
+    <div class="filter-bar">
+        <form th:action="@{/assignments/{id}/submissions(id=${assignment.getId()})}" method="get">
+            <input class="input grow" type="search" name="q" th:value="${q}" placeholder="Search by student name or username…" aria-label="Search submissions">
+            <select class="select" name="status" aria-label="Filter by status">
+                <option value="">All statuses</option>
+                <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}" th:selected="${s == status}">status</option>
+            </select>
+            <select class="select" name="sort" aria-label="Sort order">
+                <option value="recent" th:selected="${sort == 'recent'}">Newest first</option>
+                <option value="student" th:selected="${sort == 'student'}">Student name</option>
+                <option value="status" th:selected="${sort == 'status'}">Status</option>
+            </select>
+            <button class="btn btn-primary" type="submit">Apply</button>
+        </form>
+    </div>
+
+    <div class="empty" th:if="${submissions.isEmpty()}">
+        <span class="empty-ico" aria-hidden="true">📥</span>
+        <h3>No submissions match</h3>
+        <p th:text="${q != '' or status != '' ? 'Try different filters or clear the search.' : 'No submissions for this assignment yet.'}">empty</p>
+    </div>
+
+    <div class="table-wrap" th:unless="${submissions.isEmpty()}">
+        <table class="data">
+            <thead>
+            <tr><th>Student</th><th>Submitted</th><th>Status</th><th>Draft grade</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="submission : ${submissions}">
+                <td>
+                    <span class="cell-strong" th:text="${studentNames.get(submission.getId()) != null ? studentNames.get(submission.getId()).getDisplayName() : 'Unknown'}">Student</span>
+                    <div class="cell-sub" th:text="${studentNames.get(submission.getId()) != null ? studentNames.get(submission.getId()).getEmail() : ''}">email</div>
+                </td>
+                <td class="cell-sub" th:text="${submission.getSubmittedAt() != null ? #temporals.format(submission.getSubmittedAt(), 'MMM d, HH:mm') : '—'}">date</td>
+                <td>
+                    <span class="badge badge-warning" th:if="${submission.getStatus() == 'submitted'}"><span class="dot"></span>Submitted</span>
+                    <span class="badge badge-danger" th:if="${submission.getStatus() == 'late'}"><span class="dot"></span>Late</span>
+                    <span class="badge badge-info" th:if="${submission.getStatus() == 'graded'}"><span class="dot"></span>Graded (draft)</span>
+                    <span class="badge badge-success" th:if="${submission.getStatus() == 'released'}"><span class="dot"></span>Released</span>
+                    <span class="badge badge-danger" th:if="${submission.getStatus() == 'needs_resubmission'}"><span class="dot"></span>Resubmission</span>
+                </td>
+                <td class="num" th:text="${submission.getDraftGrade() != null ? submission.getDraftGrade() + ' / ' + assignment.getMaxPoints() : '—'}">—</td>
+                <td>
+                    <div class="row-actions">
+                        <a class="btn btn-secondary btn-sm" th:href="@{/submissions/{id}(id=${submission.getId()})}">View</a>
+                        <a class="btn btn-primary btn-sm" th:href="@{/submissions/{id}/grade(id=${submission.getId()})}">Grade</a>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="pagination" th:if="${totalPages > 1}" aria-label="Queue pages">
+        <a th:href="@{/assignments/{id}/submissions(id=${assignment.getId()}, page=${page - 1}, q=${q}, status=${status}, sort=${sort})}"
+           th:if="${page > 0}" rel="prev">‹ Prev</a>
+        <span class="disabled" th:if="${page <= 0}">‹ Prev</span>
+        <span class="current" th:text="|Page ${page + 1} of ${totalPages}|">Page 1</span>
+        <a th:href="@{/assignments/{id}/submissions(id=${assignment.getId()}, page=${page + 1}, q=${q}, status=${status}, sort=${sort})}"
+           th:if="${page < totalPages - 1}" rel="next">Next ›</a>
+        <span class="disabled" th:if="${page >= totalPages - 1}">Next ›</span>
+    </nav>
+</main>
+</body>
+</html>

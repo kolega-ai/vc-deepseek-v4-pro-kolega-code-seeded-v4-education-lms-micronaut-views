@@ -1,0 +1,38 @@
+micronaut:
+  application:
+    name: brightpath-batch
+  server:
+    port: ${BATCH_PORT:8083}
+  management:
+    endpoints:
+      health:
+        enabled: true
+datasources:
+  default:
+    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:5432/channel_db}
+    username: ${DATASOURCE_USERNAME:brightpath}
+    password: ${DATASOURCE_PASSWORD:brightpath_dev_password}
+    driver-class-name: org.postgresql.Driver
+    db-type: postgres
+jpa:
+  default:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        hbm2ddl:
+          auto: none
+        jdbc:
+          time_zone: UTC
+    entity-scan:
+      packages:
+        - com.brightpath.batch.domain
+brightpath:
+  batch:
+    due-reminder-window-hours: ${DUE_REMINDER_WINDOW_HOURS:24}
+    auto-close-grace-hours: ${AUTO_CLOSE_GRACE_HOURS:72}
+    coremock:
+      base-url: ${COREMOCK_BASE_URL:http://localhost:8082}
+    decision:
+      base-url: ${DECISION_BASE_URL:http://localhost:8081}
+      internal-secret: ${DECISION_INTERNAL_SECRET:brightpath_internal_dev_secret}
+    vendor-api-key: ${VENDOR_API_KEY:brightpath_vendor_api_dev_key}

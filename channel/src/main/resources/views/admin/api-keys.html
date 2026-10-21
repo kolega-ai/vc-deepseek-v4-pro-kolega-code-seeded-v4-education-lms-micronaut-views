@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('API keys','api-keys', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">Integration</div>
+            <h1>API keys</h1>
+            <p class="sub">Scoped keys for the JSON API (<code>X-Api-Key</code> header). Only a SHA-256 digest is stored; the key is shown once.</p>
+        </div>
+    </div>
+
+    <div class="two-col">
+        <section class="card">
+            <div class="card-head"><h2>Create a key</h2></div>
+            <form th:action="@{/admin/api-keys}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <div class="field">
+                    <label for="name">Name</label>
+                    <input class="input" type="text" id="name" name="name" required maxlength="120"
+                           placeholder="e.g. Registrar integration">
+                </div>
+                <div class="field">
+                    <span class="label">Scopes</span>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="scopeCourses" name="scopes" value="read:courses" checked>
+                        <label for="scopeCourses" style="margin: 0;"><code>read:courses</code> — course catalog</label>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="scopeGrades" name="scopes" value="read:grades">
+                        <label for="scopeGrades" style="margin: 0;"><code>read:grades</code> — released grades export</label>
+                    </div>
+                </div>
+                <button class="btn btn-primary" type="submit">Generate key</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="card-head"><h2>Existing keys</h2></div>
+            <div class="empty" th:if="${keys.isEmpty()}">
+                <span class="empty-ico" aria-hidden="true">🔑</span>
+                <h3>No API keys yet</h3>
+            </div>
+            <div th:each="key : ${keys}" style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid var(--ink-100);">
+                <div>
+                    <span class="cell-strong" th:text="${key.getName()}">Name</span>
+                    <div class="cell-sub" th:text="|${key.getPrefix()}… · ${key.getScopes()}|">prefix</div>
+                    <div class="cell-sub" th:if="${key.getLastUsedAt() != null}"
+                         th:text="|last used ${#temporals.format(key.getLastUsedAt(), 'MMM d, HH:mm')}|">last used</div>
+                </div>
+                <div class="row-actions">
+                    <span class="badge badge-success" th:if="${key.isEnabled()}"><span class="dot"></span>Active</span>
+                    <span class="badge badge-danger" th:unless="${key.isEnabled()}"><span class="dot"></span>Disabled</span>
+                    <form class="inline-form" method="post" th:action="@{/admin/api-keys/{id}/toggle(id=${key.getId()})}">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button class="btn btn-secondary btn-sm" type="submit" th:text="${key.isEnabled() ? 'Disable' : 'Enable'}">Disable</button>
+                    </form>
+                    <form class="inline-form" method="post" th:action="@{/admin/api-keys/{id}/revoke(id=${key.getId()})}"
+                          th:attr="data-confirm='Revoke this key? Integrations using it will stop working.'">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button class="btn btn-danger btn-sm" type="submit">Revoke</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+</body>
+</html>

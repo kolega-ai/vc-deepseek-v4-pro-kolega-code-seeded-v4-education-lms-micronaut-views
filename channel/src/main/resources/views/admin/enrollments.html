@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Enrollments','enrollments', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">Administration</div>
+            <h1>Enrollments</h1>
+            <p class="sub">Approve requests, drop students and mark completions across all cohorts.</p>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <form th:action="@{/admin/enrollments}" method="get">
+            <select class="select grow" name="cohortId" aria-label="Filter by cohort">
+                <option value="">All cohorts</option>
+                <option th:each="c : ${cohorts}" th:value="${c.getId()}" th:text="${c.getName()}"
+                        th:selected="${cohortId == c.getId().toString()}">Cohort</option>
+            </select>
+            <select class="select" name="status" aria-label="Filter by status">
+                <option value="">All statuses</option>
+                <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}" th:selected="${s == status}">status</option>
+            </select>
+            <button class="btn btn-primary" type="submit">Apply</button>
+        </form>
+    </div>
+
+    <div class="empty" th:if="${rows.isEmpty()}">
+        <span class="empty-ico" aria-hidden="true">📋</span>
+        <h3>No enrollments match</h3>
+    </div>
+
+    <div class="table-wrap" th:unless="${rows.isEmpty()}">
+        <table class="data">
+            <thead>
+            <tr><th>Student</th><th>Cohort</th><th>Requested</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="row : ${rows}">
+                <td>
+                    <span class="cell-strong" th:text="${row.get('student') != null ? row.get('student').getDisplayName() : 'Unknown'}">Student</span>
+                    <div class="cell-sub" th:text="${row.get('student') != null ? row.get('student').getEmail() : ''}">email</div>
+                </td>
+                <td th:text="${row.get('cohort').getName()}">Cohort</td>
+                <td class="cell-sub" th:text="${#temporals.format(row.get('enrollment').getEnrolledAt(), 'MMM d, yyyy')}">date</td>
+                <td>
+                    <span class="badge badge-warning" th:if="${row.get('enrollment').getStatus() == 'pending'}"><span class="dot"></span>Pending</span>
+                    <span class="badge badge-success" th:if="${row.get('enrollment').getStatus() == 'active'}"><span class="dot"></span>Active</span>
+                    <span class="badge badge-info" th:if="${row.get('enrollment').getStatus() == 'completed'}"><span class="dot"></span>Completed</span>
+                    <span class="badge badge-neutral" th:if="${row.get('enrollment').getStatus() == 'dropped'}"><span class="dot"></span>Dropped</span>
+                </td>
+                <td>
+                    <div class="row-actions">
+                        <form class="inline-form" method="post" th:if="${row.get('enrollment').getStatus() == 'pending'}"
+                              th:action="@{/admin/enrollments/{id}/approve(id=${row.get('enrollment').getId()}, redirect='/admin/enrollments')}">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button class="btn btn-primary btn-sm" type="submit">Approve</button>
+                        </form>
+                        <form class="inline-form" method="post" th:if="${row.get('enrollment').getStatus() == 'active'}"
+                              th:action="@{/admin/enrollments/{id}/complete(id=${row.get('enrollment').getId()}, redirect='/admin/enrollments')}"
+                              th:attr="data-confirm='Mark as completed?'">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button class="btn btn-secondary btn-sm" type="submit">Complete</button>
+                        </form>
+                        <form class="inline-form" method="post" th:if="${row.get('enrollment').getStatus() != 'dropped'}"
+                              th:action="@{/admin/enrollments/{id}/drop(id=${row.get('enrollment').getId()}, redirect='/admin/enrollments')}"
+                              th:attr="data-confirm='Drop this enrollment?'">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button class="btn btn-ghost btn-sm" type="submit">Drop</button>
+                        </form>
+                        <form class="inline-form" method="post" th:if="${row.get('enrollment').getStatus() == 'dropped'}"
+                              th:action="@{/admin/enrollments/{id}/resolve-state(id=${row.get('enrollment').getId()}, target='active', redirect='/admin/enrollments')}"
+                              th:attr="data-confirm='Reactivate this enrollment? This is a support correction for a mis-drop and skips the normal approval step.'">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button class="btn btn-secondary btn-sm" type="submit">Reactivate (support fix)</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>

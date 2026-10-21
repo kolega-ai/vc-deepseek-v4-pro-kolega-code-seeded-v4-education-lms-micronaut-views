@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|Page not found · ${orgName}|">Page not found</title>
+    <link rel="stylesheet" th:href="@{/css/app.css(v=${assetVersion})}">
+</head>
+<body>
+<div class="error-page">
+    <div class="code">404</div>
+    <h1>Page not found</h1>
+    <p class="msg">The page you are looking for does not exist or may have been moved.</p>
+    <p><a class="btn btn-primary" th:href="@{/dashboard}">Go to my dashboard</a></p>
+</div>
+</body>
+</html>

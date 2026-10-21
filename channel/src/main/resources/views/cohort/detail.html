@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page(${cohort.getName()},'courses', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/courses/{id}(id=${course.getId()})}" th:text="${course.getTitle()}">Course</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span th:text="${cohort.getName()}">Cohort</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker" th:text="|${course.getCode()} · cohort|">cohort</div>
+            <h1 th:text="${cohort.getName()}">Cohort</h1>
+            <p class="sub" th:text="${cohort.getScheduleSummary()}">schedule</p>
+        </div>
+        <span>
+            <span class="badge badge-primary" th:if="${cohort.getStatus() == 'upcoming'}"><span class="dot"></span>Upcoming</span>
+            <span class="badge badge-success" th:if="${cohort.getStatus() == 'active'}"><span class="dot"></span>Active</span>
+            <span class="badge badge-info" th:if="${cohort.getStatus() == 'completed'}"><span class="dot"></span>Completed</span>
+            <span class="badge badge-neutral" th:if="${cohort.getStatus() == 'cancelled'}"><span class="dot"></span>Cancelled</span>
+        </span>
+    </div>
+
+    <div class="grid grid-4">
+        <div class="stat">
+            <div class="stat-label">Schedule</div>
+            <div class="stat-value" style="font-size: 1.1rem;"
+                 th:text="|${#temporals.format(cohort.getStartDate(), 'MMM d')} → ${#temporals.format(cohort.getEndDate(), 'MMM d, yyyy')}|">dates</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Capacity</div>
+            <div class="stat-value" th:text="|${#lists.size(roster)} / ${cohort.getMaxStudents()}|">x / y</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Active students</div>
+            <div class="stat-value" th:text="${activeCount}">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Staff assigned</div>
+            <div class="stat-value" th:text="${#lists.size(staff)}">0</div>
+        </div>
+    </div>
+
+    <div class="grid grid-main">
+        <section class="card" th:if="${canManage}">
+            <div class="card-head"><h2>Roster</h2></div>
+            <div class="empty" th:if="${roster.isEmpty()}">
+                <span class="empty-ico" aria-hidden="true">👥</span>
+                <h3>No students yet</h3>
+                <p>Students appear once they request enrollment or are imported.</p>
+            </div>
+            <div class="table-wrap" th:unless="${roster.isEmpty()}">
+                <table class="data">
+                    <thead>
+                    <tr><th>Student</th><th>Enrolled</th><th>Status</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${roster}">
+                        <td>
+                            <span class="cell-strong" th:if="${row.get('student') != null}" th:text="${row.get('student').getDisplayName()}">Name</span>
+                            <div class="cell-sub" th:if="${row.get('student') != null}" th:text="${row.get('student').getEmail()}">email</div>
+                        </td>
+                        <td class="cell-sub" th:text="${row.get('enrollment').getEnrolledAt() != null ? #temporals.format(row.get('enrollment').getEnrolledAt(), 'MMM d, yyyy') : '—'}">date</td>
+                        <td>
+                            <span class="badge badge-warning" th:if="${row.get('enrollment').getStatus() == 'pending'}"><span class="dot"></span>Pending</span>
+                            <span class="badge badge-success" th:if="${row.get('enrollment').getStatus() == 'active'}"><span class="dot"></span>Active</span>
+                            <span class="badge badge-info" th:if="${row.get('enrollment').getStatus() == 'completed'}"><span class="dot"></span>Completed</span>
+                            <span class="badge badge-neutral" th:if="${row.get('enrollment').getStatus() == 'dropped'}"><span class="dot"></span>Dropped</span>
+                        </td>
+                        <td>
+                            <div class="row-actions">
+                                <form class="inline-form" method="post"
+                                      th:if="${row.get('enrollment').getStatus() == 'pending'}"
+                                      th:action="@{/cohorts/{cid}/enrollments/{eid}/approve(cid=${cohort.getId()}, eid=${row.get('enrollment').getId()})}">
+                                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                                    <button class="btn btn-primary btn-sm" type="submit">Approve</button>
+                                </form>
+                                <form class="inline-form" method="post"
+                                      th:if="${row.get('enrollment').getStatus() == 'active'}"
+                                      th:action="@{/cohorts/{cid}/enrollments/{eid}/complete(cid=${cohort.getId()}, eid=${row.get('enrollment').getId()})}"
+                                      th:attr="data-confirm='Mark this enrollment as completed?'">
+                                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                                    <button class="btn btn-secondary btn-sm" type="submit">Complete</button>
+                                </form>
+                                <form class="inline-form" method="post"
+                                      th:if="${row.get('enrollment').getStatus() != 'dropped'}"
+                                      th:action="@{/cohorts/{cid}/enrollments/{eid}/drop(cid=${cohort.getId()}, eid=${row.get('enrollment').getId()})}"
+                                      th:attr="data-confirm='Drop this enrollment?'">
+                                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                                    <button class="btn btn-ghost btn-sm" type="submit">Drop</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <hr class="section-rule">
+            <p class="cell-sub">Preview another cohort's roster in this course (support tool):</p>
+            <form th:action="@{/cohorts/{id}/roster-sync(id=${cohort.getId()})}" method="post" class="inline-form">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <select class="select" name="cohortId" required>
+                    <option th:each="sc : ${siblingCohorts}" th:value="${sc.getId()}" th:text="${sc.getName()}">Cohort</option>
+                </select>
+                <button class="btn btn-secondary btn-sm" type="submit">Preview roster count</button>
+            </form>
+        </section>
+
+        <div th:if="${canManage}">
+            <section class="card">
+                <div class="card-head"><h2>Teaching team</h2></div>
+                <div class="empty" th:if="${staff.isEmpty()}">
+                    <span class="empty-ico" aria-hidden="true">🧑‍🏫</span>
+                    <h3>No staff assigned</h3>
+                </div>
+                <div th:each="s : ${staff}" style="display:flex; justify-content:space-between; align-items:center; padding: 0.5rem 0; border-bottom: 1px solid var(--ink-100);">
+                    <div>
+                        <span class="cell-strong" th:text="${staffUsers.get(s.getId()) != null ? staffUsers.get(s.getId()).getDisplayName() : 'Unknown'}">Name</span>
+                        <span class="badge badge-primary" th:text="${s.getStaffRole() == 'instructor' ? 'Instructor' : 'Assistant'}" style="margin-left: 0.4rem;">Role</span>
+                    </div>
+                    <form class="inline-form" method="post"
+                          th:action="@{/cohorts/{cid}/staff/{uid}/remove(cid=${cohort.getId()}, uid=${s.getUserId()})}"
+                          th:attr="data-confirm='Remove this staff assignment?'">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button class="btn btn-ghost btn-sm" type="submit" aria-label="Remove staff assignment">✕</button>
+                    </form>
+                </div>
+                <hr class="section-rule">
+                <form th:action="@{/cohorts/{id}/staff(id=${cohort.getId()})}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <div class="field">
+                        <label for="userId">Assign staff member</label>
+                        <select class="select" id="userId" name="userId" required>
+                            <option value="">Choose an instructor…</option>
+                            <option th:each="candidate : ${staffCandidates}" th:value="${candidate.getId()}"
+                                    th:text="${candidate.getDisplayName()}">Instructor</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="staffRole">Role in this cohort</label>
+                        <select class="select" id="staffRole" name="staffRole">
+                            <option value="instructor">Instructor</option>
+                            <option value="assistant">Teaching assistant</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Assign</button>
+                </form>
+            </section>
+
+            <section class="card">
+                <div class="card-head"><h2>Cohort lifecycle</h2></div>
+                <p class="cell-sub">Transitions follow the approved workflow: upcoming → active → completed (or cancelled).</p>
+                <div class="pill-row">
+                    <form class="inline-form" method="post" th:if="${cohort.getStatus() == 'upcoming'}"
+                          th:action="@{/cohorts/{id}/status(id=${cohort.getId()}, target='active')}">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button class="btn btn-primary btn-sm" type="submit">Start cohort</button>
+                    </form>
+                    <form class="inline-form" method="post" th:if="${cohort.getStatus() == 'active'}"
+                          th:action="@{/cohorts/{id}/status(id=${cohort.getId()}, target='completed')}"
+                          th:attr="data-confirm='Mark this cohort as completed?'">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button class="btn btn-secondary btn-sm" type="submit">Complete cohort</button>
+                    </form>
+                    <form class="inline-form" method="post"
+                          th:if="${cohort.getStatus() == 'upcoming' or cohort.getStatus() == 'active'}"
+                          th:action="@{/cohorts/{id}/status(id=${cohort.getId()}, target='cancelled')}"
+                          th:attr="data-confirm='Cancel this cohort? This cannot be undone.'">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button class="btn btn-danger btn-sm" type="submit">Cancel cohort</button>
+                    </form>
+                </div>
+            </section>
+        </div>
+
+        <section class="card" th:if="${!canManage}">
+            <div class="card-head"><h2>Your cohort</h2></div>
+            <p class="cell-sub" th:text="|${#lists.size(roster)} students in this cohort.|">roster size</p>
+            <div style="display:flex; gap: 0.5rem; flex-wrap: wrap;">
+                <span class="badge badge-neutral" th:each="row : ${roster}" th:if="${row.get('student') != null}"
+                      th:text="${row.get('student').getDisplayName()}">Name</span>
+            </div>
+        </section>
+    </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Course catalog','courses', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">Catalog</div>
+            <h1>Course catalog</h1>
+            <p class="sub">Find a course, join a cohort and start learning.</p>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <form th:action="@{/courses}" method="get">
+            <input class="input grow" type="search" name="q" th:value="${q}" placeholder="Search by title or course code…" aria-label="Search courses">
+            <select class="select" name="category" aria-label="Filter by category">
+                <option value="">All categories</option>
+                <option th:each="c : ${categories}" th:value="${c}" th:text="${c}" th:selected="${c == category}">Category</option>
+            </select>
+            <select class="select" name="level" aria-label="Filter by level">
+                <option value="">All levels</option>
+                <option th:each="l : ${levels}" th:value="${l}" th:text="${l}" th:selected="${l == level}">Level</option>
+            </select>
+            <button class="btn btn-primary" type="submit">Search</button>
+        </form>
+    </div>
+
+    <div class="empty" th:if="${courses.isEmpty()}">
+        <span class="empty-ico" aria-hidden="true">🔍</span>
+        <h3>No courses match your search</h3>
+        <p>Try different keywords or clear the filters.</p>
+    </div>
+
+    <div class="grid grid-3">
+        <a class="course-card" th:each="course : ${courses}" th:href="@{/courses/{id}(id=${course.getId()})}">
+            <div class="course-cover" th:classappend="${'cover-' + course.getCoverColor()}">
+                <span class="cover-code" th:text="${course.getCode()}">CS-101</span>
+            </div>
+            <div class="course-body">
+                <span class="course-title" th:text="${course.getTitle()}">Course</span>
+                <span class="course-meta">
+                    <span th:text="${course.getCategory()}">Category</span>
+                    <span aria-hidden="true">·</span>
+                    <span th:text="${course.getLevel()}">Level</span>
+                </span>
+                <span class="cell-sub" th:text="${course.getSubtitle()}">Subtitle</span>
+                <div class="course-foot">
+                    <span th:if="${myEnrollments.containsKey(course.getId())}">
+                        <span class="badge badge-success" th:if="${myEnrollments.get(course.getId()).getStatus() == 'active'}"><span class="dot"></span>Enrolled</span>
+                        <span class="badge badge-warning" th:if="${myEnrollments.get(course.getId()).getStatus() == 'pending'}"><span class="dot"></span>Request pending</span>
+                        <span class="badge badge-info" th:if="${myEnrollments.get(course.getId()).getStatus() == 'completed'}"><span class="dot"></span>Completed</span>
+                    </span>
+                    <span class="badge badge-neutral" th:unless="${myEnrollments.containsKey(course.getId())}"><span class="dot"></span>Not enrolled</span>
+                    <span class="btn btn-secondary btn-sm">View course</span>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <nav class="pagination" th:if="${totalPages > 1}" aria-label="Catalog pages">
+        <a th:href="@{/courses(page=${page - 1}, q=${q}, category=${category}, level=${level})}"
+           th:classappend="${page <= 0} ? 'disabled'" th:if="${page > 0}" rel="prev">‹ Prev</a>
+        <span class="disabled" th:if="${page <= 0}">‹ Prev</span>
+        <span class="current" th:text="|Page ${page + 1} of ${totalPages}|">Page 1</span>
+        <a th:href="@{/courses(page=${page + 1}, q=${q}, category=${category}, level=${level})}"
+           th:classappend="${page >= totalPages - 1} ? 'disabled'" th:if="${page < totalPages - 1}" rel="next">Next ›</a>
+        <span class="disabled" th:if="${page >= totalPages - 1}">Next ›</span>
+    </nav>
+</main>
+</body>
+</html>

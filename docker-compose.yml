@@ -1,0 +1,114 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: brightpath-postgres
+    environment:
+      POSTGRES_USER: brightpath
+      POSTGRES_PASSWORD: brightpath_dev_password
+      POSTGRES_DB: channel_db
+    volumes:
+      - brightpath-pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brightpath -d channel_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  decision:
+    build:
+      context: .
+      dockerfile: Dockerfile.decision
+    container_name: brightpath-decision
+    environment:
+      DATASOURCE_URL: jdbc:postgresql://postgres:5432/decision_db
+      DATASOURCE_USERNAME: brightpath
+      DATASOURCE_PASSWORD: brightpath_dev_password
+      DECISION_INTERNAL_SECRET: brightpath_internal_dev_secret
+      SESSION_SIGNING_SECRET: brightpath_session_signing_dev_secret
+      SCOPE_TOKEN_SECRET: brightpath_scope_token_dev_secret
+      DECISION_PORT: "8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "18084:8081"
+    restart: unless-stopped
+
+  core-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile.core-mock
+    container_name: brightpath-core-mock
+    environment:
+      DATASOURCE_URL: jdbc:postgresql://postgres:5432/coremock_db
+      DATASOURCE_USERNAME: brightpath
+      DATASOURCE_PASSWORD: brightpath_dev_password
+      VENDOR_API_KEY: brightpath_vendor_api_dev_key
+      SCOPE_TOKEN_SECRET: brightpath_scope_token_dev_secret
+      WEBHOOK_SECRET: brightpath_webhook_dev_secret
+      COREMOCK_PORT: "8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "18082:8082"
+    restart: unless-stopped
+
+  channel:
+    build:
+      context: .
+      dockerfile: Dockerfile.channel
+    container_name: brightpath-channel
+    environment:
+      DATASOURCE_URL: jdbc:postgresql://postgres:5432/channel_db
+      DATASOURCE_USERNAME: brightpath
+      DATASOURCE_PASSWORD: brightpath_dev_password
+      DECISION_BASE_URL: http://decision:8081
+      DECISION_INTERNAL_SECRET: brightpath_internal_dev_secret
+      COREMOCK_BASE_URL: http://core-mock:8082
+      VENDOR_API_KEY: brightpath_vendor_api_dev_key
+      WEBHOOK_SECRET: brightpath_webhook_dev_secret
+      UPLOAD_DIR: /data/uploads
+      SEED_ENABLED: "true"
+      CHANNEL_PORT: "8080"
+    volumes:
+      - brightpath-uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      decision:
+        condition: service_started
+      core-mock:
+        condition: service_started
+    ports:
+      - "18080:8080"
+    restart: unless-stopped
+
+  batch:
+    build:
+      context: .
+      dockerfile: Dockerfile.batch
+    container_name: brightpath-batch
+    environment:
+      DATASOURCE_URL: jdbc:postgresql://postgres:5432/channel_db
+      DATASOURCE_USERNAME: brightpath
+      DATASOURCE_PASSWORD: brightpath_dev_password
+      DECISION_BASE_URL: http://decision:8081
+      DECISION_INTERNAL_SECRET: brightpath_internal_dev_secret
+      COREMOCK_BASE_URL: http://core-mock:8082
+      VENDOR_API_KEY: brightpath_vendor_api_dev_key
+      BATCH_PORT: "8083"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      decision:
+        condition: service_started
+      core-mock:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  brightpath-pgdata:
+  brightpath-uploads:

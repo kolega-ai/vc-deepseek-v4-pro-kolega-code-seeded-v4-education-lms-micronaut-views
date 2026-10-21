@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Export','export', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">Administration</div>
+            <h1>Export reports</h1>
+            <p class="sub">Grades, submissions and progress as CSV. Every export is recorded in the audit log with the row count.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-3">
+        <section class="card" th:each="course : ${courses.values()}">
+            <div class="card-head">
+                <h2 th:text="${course.getCode()}">CODE</h2>
+                <span class="cell-sub" th:text="${course.getTitle()}">title</span>
+            </div>
+            <div class="field">
+                <label>Scope</label>
+                <select class="select" id="${'cohort-' + course.getId()}" aria-label="Export scope">
+                    <option value="">Whole course</option>
+                    <option th:each="cohort : ${cohorts.get(course.getId())}" th:value="${cohort.getId()}"
+                            th:text="${cohort.getName()}">Cohort</option>
+                </select>
+            </div>
+            <div class="pill-row">
+                <a class="btn btn-primary btn-sm" id="${'grades-' + course.getId()}"
+                   th:href="@{/admin/export/grades.csv(courseId=${course.getId()})}">Grades CSV</a>
+                <a class="btn btn-secondary btn-sm" id="${'submissions-' + course.getId()}"
+                   th:href="@{/admin/export/submissions.csv(courseId=${course.getId()})}">Submissions CSV</a>
+                <a class="btn btn-secondary btn-sm" id="${'progress-' + course.getId()}"
+                   th:href="@{/admin/export/progress.csv(courseId=${course.getId()})}">Progress CSV</a>
+            </div>
+        </section>
+    </div>
+
+    <script type="application/json" id="export-scope-binder">{"enabled": true}</script>
+    <div class="empty" th:if="${courses.isEmpty()}">
+        <span class="empty-ico" aria-hidden="true">📤</span>
+        <h3>No active courses to export</h3>
+    </div>
+</main>
+</body>
+</html>

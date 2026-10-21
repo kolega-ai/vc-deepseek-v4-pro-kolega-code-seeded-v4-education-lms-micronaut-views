@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Discussions','courses', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/courses/{id}(id=${course.getId()})}" th:text="${course.getTitle()}">Course</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span>Discussions</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker" th:text="${course.getCode()}">course</div>
+            <h1>Discussion board</h1>
+            <p class="sub" th:text="|Questions and conversations for ${course.getTitle()}.|">subtitle</p>
+        </div>
+        <a class="btn btn-primary" th:href="@{/courses/{id}/discussions/new(id=${course.getId()})}">Start a discussion</a>
+    </div>
+
+    <div class="filter-bar">
+        <form th:action="@{/courses/{id}/discussions(id=${course.getId()})}" method="get">
+            <input class="input grow" type="search" name="q" th:value="${q}" placeholder="Search discussions…" aria-label="Search discussions">
+            <button class="btn btn-primary" type="submit">Search</button>
+        </form>
+    </div>
+
+    <div class="empty" th:if="${threads.isEmpty()}">
+        <span class="empty-ico" aria-hidden="true">💬</span>
+        <h3>No discussions yet</h3>
+        <p>Start the first conversation for this course.</p>
+    </div>
+
+    <div th:each="thread : ${threads}">
+        <a class="discussion-item" th:href="@{/discussions/{id}(id=${thread.getId()})}">
+            <span class="d-title">
+                <span class="badge badge-amber" th:if="${thread.isPinned()}"><span class="dot"></span>Pinned</span>
+                <span th:text="${thread.getTitle()}">Title</span>
+                <span class="badge badge-neutral" th:if="${thread.isLocked()}"><span class="dot"></span>Locked</span>
+            </span>
+            <span class="d-meta" th:text="|${authorNames.get(thread.getAuthorId())} · ${commentCounts.getOrDefault(thread.getId(), 0)} replies · updated ${#temporals.format(thread.getUpdatedAt(), 'MMM d, HH:mm')}|">meta</span>
+        </a>
+    </div>
+
+    <nav class="pagination" th:if="${totalPages > 1}" aria-label="Discussion pages">
+        <a th:href="@{/courses/{id}/discussions(id=${course.getId()}, page=${page - 1}, q=${q})}" th:if="${page > 0}" rel="prev">‹ Prev</a>
+        <span class="disabled" th:if="${page <= 0}">‹ Prev</span>
+        <span class="current" th:text="|Page ${page + 1} of ${totalPages}|">Page 1</span>
+        <a th:href="@{/courses/{id}/discussions(id=${course.getId()}, page=${page + 1}, q=${q})}" th:if="${page < totalPages - 1}" rel="next">Next ›</a>
+        <span class="disabled" th:if="${page >= totalPages - 1}">Next ›</span>
+    </nav>
+</main>
+</body>
+</html>

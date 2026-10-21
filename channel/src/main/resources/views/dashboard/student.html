@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('My learning','dashboard', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">Student workspace</div>
+            <h1 th:text="|Welcome back, ${principal.displayName()}|">Welcome back</h1>
+            <p class="sub">Your courses, upcoming work, and recent grades in one place.</p>
+        </div>
+        <a class="btn btn-primary" th:href="@{/courses}">Browse course catalog</a>
+    </div>
+
+    <div class="grid grid-4" th:if="${!cards.isEmpty()}">
+        <div class="stat stat-accent">
+            <div class="stat-label">Enrolled courses</div>
+            <div class="stat-value" th:text="${#lists.size(cards)}">0</div>
+        </div>
+        <div class="stat stat-amber">
+            <div class="stat-label">Due in the next days</div>
+            <div class="stat-value" th:text="${#lists.size(due)}">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Assignments submitted</div>
+            <div class="stat-value" th:text="${submittedCount}">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Grades released</div>
+            <div class="stat-value" th:text="${gradesReleasedCount}">0</div>
+        </div>
+    </div>
+
+    <div class="grid grid-main">
+        <section class="card">
+            <div class="card-head">
+                <h2>My courses</h2>
+            </div>
+            <div class="empty" th:if="${cards.isEmpty()}">
+                <span class="empty-ico" aria-hidden="true">📚</span>
+                <h3>You are not enrolled in any courses yet</h3>
+                <p>Browse the catalog and request enrollment in a cohort to get started.</p>
+                <a class="btn btn-primary" th:href="@{/courses}">Browse catalog</a>
+            </div>
+            <div th:each="card : ${cards}" style="margin-bottom: 0.9rem;">
+                <a class="course-card" th:href="@{/courses/{id}(id=${card.course().getId()})}" style="flex-direction: row; align-items: stretch;">
+                    <div class="course-cover" style="width: 120px; height: auto;"
+                         th:classappend="${'cover-' + card.course().getCoverColor()}" th:if="${card.course().getCoverColor() != null}">
+                        <span class="cover-code" th:text="${card.course().getCode()}">CS-101</span>
+                    </div>
+                    <div class="course-body" style="flex:1;">
+                        <span class="course-title" th:text="${card.course().getTitle()}">Course</span>
+                        <span class="course-meta">
+                            <span th:text="${card.cohort().getName()}">Cohort</span>
+                            <span th:if="${card.enrollmentStatus() == 'active'}" class="badge badge-success"><span class="dot"></span>Enrolled</span>
+                            <span th:if="${card.enrollmentStatus() == 'pending'}" class="badge badge-warning"><span class="dot"></span>Pending approval</span>
+                            <span th:if="${card.enrollmentStatus() == 'completed'}" class="badge badge-info"><span class="dot"></span>Completed</span>
+                        </span>
+                        <div class="progress"><div class="bar"
+                             th:style="|width: ${card.assignmentsTotal() == 0 ? 0 : (card.assignmentsSubmitted() * 100 / card.assignmentsTotal())}%|"></div></div>
+                        <span class="cell-sub" th:text="|${card.assignmentsSubmitted()} of ${card.assignmentsTotal()} assignments submitted · ${card.gradesReleased()} grades released|">progress</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <div>
+            <section class="card">
+                <div class="card-head"><h2>Upcoming deadlines</h2></div>
+                <div class="empty" th:if="${due.isEmpty()}">
+                    <span class="empty-ico" aria-hidden="true">🎉</span>
+                    <h3>Nothing due right now</h3>
+                    <p>Enjoy the calm — check back later.</p>
+                </div>
+                <ul class="timeline" th:unless="${due.isEmpty()}">
+                    <li th:each="item : ${due}">
+                        <div class="t-date" th:text="${#temporals.format(item.assignment().getDueAt(), 'EEE, MMM d · HH:mm')}">due</div>
+                        <div class="t-body">
+                            <a th:href="@{/assignments/{id}(id=${item.assignment().getId()})}" th:text="${item.assignment().getTitle()}">Assignment</a>
+                            <span class="cell-sub" th:text="${item.course().getCode()}">CS-101</span>
+                            <div th:if="${item.submission() != null}">
+                                <span class="badge badge-primary" th:if="${item.submission().getStatus() == 'needs_resubmission'}"><span class="dot"></span>Resubmission requested</span>
+                                <span class="badge badge-neutral" th:unless="${item.submission().getStatus() == 'needs_resubmission'}"><span class="dot"></span>Submitted — awaiting grading</span>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <section class="card">
+                <div class="card-head"><h2>Recent grades</h2></div>
+                <div class="empty" th:if="${recentGrades.isEmpty()}">
+                    <span class="empty-ico" aria-hidden="true">📝</span>
+                    <h3>No released grades yet</h3>
+                    <p>Grades appear here once your instructors release them.</p>
+                </div>
+                <div th:each="g : ${recentGrades}" style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; padding: 0.55rem 0; border-bottom: 1px solid var(--ink-100);">
+                    <div>
+                        <div class="cell-strong" th:text="${g.get('title')}">Assignment</div>
+                        <div class="cell-sub" th:text="${g.get('courseTitle')}">Course</div>
+                    </div>
+                    <a class="btn btn-secondary btn-sm" th:href="@{/assignments/{id}(id=${g.get('assignmentId')})}"
+                       th:text="|${g.get('grade')} / ${g.get('maxPoints')}|">9 / 10</a>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+</body>
+</html>

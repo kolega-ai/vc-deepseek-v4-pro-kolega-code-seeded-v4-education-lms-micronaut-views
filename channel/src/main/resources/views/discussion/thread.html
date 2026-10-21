@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page(${thread.getTitle()},'courses', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/courses/{id}(id=${course.getId()})}" th:text="${course.getTitle()}">Course</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <a th:href="@{/courses/{id}/discussions(id=${course.getId()})}">Discussions</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span th:text="${thread.getTitle()}">Thread</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker" th:text="${course.getCode()}">course</div>
+            <h1 th:text="${thread.getTitle()}">Thread</h1>
+            <p class="sub" th:text="|Started by ${authorNames.get(thread.getAuthorId())} · ${#temporals.format(thread.getCreatedAt(), 'MMM d, yyyy · HH:mm')}|">meta</p>
+        </div>
+        <span th:if="${canModerate}">
+            <span class="badge badge-amber" th:if="${thread.isPinned()}"><span class="dot"></span>Pinned</span>
+            <span class="badge badge-neutral" th:if="${thread.isLocked()}"><span class="dot"></span>Locked</span>
+        </span>
+    </div>
+
+    <section class="card">
+        <p style="white-space: pre-wrap;" th:text="${thread.getBody()}">Body</p>
+        <div class="pill-row" th:if="${canModerate}">
+            <form class="inline-form" method="post" th:action="@{/discussions/{id}/pin(id=${thread.getId()}, value=${!thread.isPinned()})}">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <button class="btn btn-secondary btn-sm" type="submit" th:text="${thread.isPinned() ? 'Unpin' : 'Pin'}">Pin</button>
+            </form>
+            <form class="inline-form" method="post" th:action="@{/discussions/{id}/lock(id=${thread.getId()}, value=${!thread.isLocked()})}">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <button class="btn btn-secondary btn-sm" type="submit" th:text="${thread.isLocked() ? 'Unlock' : 'Lock'}">Lock</button>
+            </form>
+            <form class="inline-form" method="post" th:action="@{/discussions/{id}/delete(id=${thread.getId()})}"
+                  th:attr="data-confirm='Delete this discussion?'">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+            </form>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="card-head"><h2 th:text="|Replies (${#lists.size(comments)})|">Replies</h2></div>
+        <div class="empty" th:if="${comments.isEmpty()}">
+            <span class="empty-ico" aria-hidden="true">💬</span>
+            <h3>No replies yet</h3>
+            <p>Be the first to reply.</p>
+        </div>
+        <div class="comment" th:each="comment : ${comments}">
+            <span class="avatar" th:text="${#strings.substring(authorNames.get(comment.getAuthorId()),0,1)}">U</span>
+            <div class="c-body">
+                <div class="c-text" th:text="${comment.getBody()}">Body</div>
+                <div class="c-meta" th:text="|${authorNames.get(comment.getAuthorId())} · ${#temporals.format(comment.getCreatedAt(), 'MMM d, yyyy · HH:mm')}|">meta</div>
+            </div>
+            <form class="inline-form" method="post" th:action="@{/comments/{id}/delete(id=${comment.getId()})}"
+                  th:if="${canModerate or comment.getAuthorId() == currentUserId}"
+                  th:attr="data-confirm='Delete this reply?'">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <button class="btn btn-ghost btn-sm" type="submit" aria-label="Delete reply">✕</button>
+            </form>
+        </div>
+    </section>
+
+    <section class="card" th:if="${!thread.isLocked() or canModerate}">
+        <div class="card-head"><h2>Reply</h2></div>
+        <form th:action="@{/discussions/{id}/comments(id=${thread.getId()})}" method="post">
+            <input type="hidden" name="_csrf" th:value="${csrf}">
+            <div class="field">
+                <label for="body">Your reply</label>
+                <textarea class="textarea" id="body" name="body" required maxlength="10000"
+                          placeholder="Write a thoughtful reply…"></textarea>
+            </div>
+            <button class="btn btn-primary" type="submit">Post reply</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

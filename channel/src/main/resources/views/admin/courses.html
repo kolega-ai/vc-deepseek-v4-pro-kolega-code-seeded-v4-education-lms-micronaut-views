@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Courses','admin-courses', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">Administration</div>
+            <h1>Courses</h1>
+            <p class="sub">Create and manage courses, modules, lessons and resources.</p>
+        </div>
+        <a class="btn btn-primary" th:href="@{/admin/courses/new}">Create course</a>
+    </div>
+
+    <div class="filter-bar">
+        <form th:action="@{/admin/courses}" method="get">
+            <input class="input grow" type="search" name="q" th:value="${q}" placeholder="Search by title or code…" aria-label="Search courses">
+            <select class="select" name="category" aria-label="Filter by category">
+                <option value="">All categories</option>
+                <option th:each="c : ${categories}" th:value="${c}" th:text="${c}" th:selected="${c == category}">Category</option>
+            </select>
+            <select class="select" name="status" aria-label="Filter by status">
+                <option value="">Any status</option>
+                <option value="active" th:selected="${status == 'active'}">Active</option>
+                <option value="archived" th:selected="${status == 'archived'}">Archived</option>
+            </select>
+            <button class="btn btn-primary" type="submit">Search</button>
+        </form>
+    </div>
+
+    <div class="empty" th:if="${courses.isEmpty()}">
+        <span class="empty-ico" aria-hidden="true">📚</span>
+        <h3>No courses match</h3>
+    </div>
+
+    <div class="table-wrap" th:unless="${courses.isEmpty()}">
+        <table class="data">
+            <thead>
+            <tr><th>Course</th><th>Category</th><th>Level</th><th>Enrollment</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="course : ${courses}">
+                <td>
+                    <a class="cell-strong" th:href="@{/admin/courses/{id}(id=${course.getId()})}" th:text="${course.getTitle()}">Course</a>
+                    <div class="cell-sub" th:text="${course.getCode()}">CODE</div>
+                </td>
+                <td th:text="${course.getCategory()}">category</td>
+                <td th:text="${course.getLevel()}">level</td>
+                <td>
+                    <span class="badge badge-success" th:if="${course.isEnrollmentOpen()}"><span class="dot"></span>Open</span>
+                    <span class="badge badge-neutral" th:unless="${course.isEnrollmentOpen()}"><span class="dot"></span>Closed</span>
+                </td>
+                <td>
+                    <span class="badge badge-success" th:if="${course.getStatus() == 'active'}"><span class="dot"></span>Active</span>
+                    <span class="badge badge-neutral" th:if="${course.getStatus() == 'archived'}"><span class="dot"></span>Archived</span>
+                </td>
+                <td><a class="btn btn-secondary btn-sm" th:href="@{/admin/courses/{id}(id=${course.getId()})}">Manage</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="pagination" th:if="${totalPages > 1}" aria-label="Course pages">
+        <a th:href="@{/admin/courses(page=${page - 1}, q=${q}, category=${category}, status=${status})}" th:if="${page > 0}" rel="prev">‹ Prev</a>
+        <span class="disabled" th:if="${page <= 0}">‹ Prev</span>
+        <span class="current" th:text="|Page ${page + 1} of ${totalPages}|">Page 1</span>
+        <a th:href="@{/admin/courses(page=${page + 1}, q=${q}, category=${category}, status=${status})}" th:if="${page < totalPages - 1}" rel="next">Next ›</a>
+        <span class="disabled" th:if="${page >= totalPages - 1}">Next ›</span>
+    </nav>
+</main>
+</body>
+</html>

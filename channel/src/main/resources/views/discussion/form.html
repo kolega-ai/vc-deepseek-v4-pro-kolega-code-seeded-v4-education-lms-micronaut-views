@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Start a discussion','courses', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/courses/{id}(id=${course.getId()})}" th:text="${course.getTitle()}">Course</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <a th:href="@{/courses/{id}/discussions(id=${course.getId()})}">Discussions</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span>New discussion</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker" th:text="${course.getCode()}">course</div>
+            <h1>Start a discussion</h1>
+        </div>
+    </div>
+
+    <form class="form-card" th:action="@{/courses/{id}/discussions(id=${course.getId()})}" method="post">
+        <input type="hidden" name="_csrf" th:value="${csrf}">
+        <div class="field">
+            <label for="title">Title</label>
+            <input class="input" type="text" id="title" name="title" required maxlength="200"
+                   placeholder="e.g. Stuck on module 3 exercise — any tips?">
+        </div>
+        <div class="field">
+            <label for="body">Message</label>
+            <textarea class="textarea" id="body" name="body" required maxlength="10000"
+                      placeholder="Describe your question or thought…"></textarea>
+        </div>
+        <div class="form-actions">
+            <a class="btn btn-ghost" th:href="@{/courses/{id}/discussions(id=${course.getId()})}">Cancel</a>
+            <button class="btn btn-primary" type="submit">Post discussion</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

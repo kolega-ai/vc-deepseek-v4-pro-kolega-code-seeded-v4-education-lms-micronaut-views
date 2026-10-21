@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Webhook deliveries','webhooks', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/admin/webhooks}">Webhooks</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span th:text="${endpoint.getName()}">Endpoint</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker">Integration</div>
+            <h1 th:text="|Deliveries — ${endpoint.getName()}|">Deliveries</h1>
+            <p class="sub" th:text="${endpoint.getUrl()}">url</p>
+        </div>
+    </div>
+
+    <div class="callout" style="margin-bottom: 1.5rem;">
+        <strong>Signing secret</strong> (used to verify the <code>X-Brightpath-Signature</code> header on your receiver):
+        <code th:text="${endpoint.getSecret()}">secret</code>
+    </div>
+
+    <div class="empty" th:if="${deliveries.isEmpty()}">
+        <span class="empty-ico" aria-hidden="true">📭</span>
+        <h3>No deliveries recorded yet</h3>
+    </div>
+
+    <div class="table-wrap" th:unless="${deliveries.isEmpty()}">
+        <table class="data">
+            <thead>
+            <tr><th>When</th><th>Event</th><th>Payload SHA-256</th><th>Response</th><th>Outcome</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="delivery : ${deliveries}">
+                <td class="cell-sub" th:text="${#temporals.format(delivery.getCreatedAt(), 'MMM d, yyyy · HH:mm:ss')}">time</td>
+                <td><span class="badge badge-neutral" th:text="${delivery.getEventType()}">event</span></td>
+                <td class="cell-sub" style="font-family: ui-monospace, Menlo, monospace;"
+                    th:text="${delivery.getPayloadSha256()}">sha</td>
+                <td class="num" th:text="${delivery.getResponseCode() != null ? delivery.getResponseCode() : '—'}">code</td>
+                <td>
+                    <span class="badge badge-success" th:if="${delivery.isSuccess()}"><span class="dot"></span>Delivered</span>
+                    <span class="badge badge-danger" th:unless="${delivery.isSuccess()}">
+                        <span class="dot"></span>Failed
+                    </span>
+                    <div class="cell-sub" th:if="${delivery.getErrorMessage() != null}" th:text="${delivery.getErrorMessage()}">error</div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>

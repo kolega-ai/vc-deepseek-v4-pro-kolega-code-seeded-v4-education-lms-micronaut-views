@@ -1,0 +1,65 @@
+plugins {
+    id 'io.micronaut.application' version '4.5.4'
+    id 'com.gradleup.shadow' version '8.3.5'
+}
+
+micronaut {
+    version = '4.8.3'
+    runtime = 'netty'
+    testRuntime = 'JUNIT_5'
+}
+
+application {
+    mainClass = 'com.brightpath.channel.Application'
+}
+
+dependencies {
+    annotationProcessor 'io.micronaut.validation:micronaut-validation-processor'
+
+    implementation 'io.micronaut:micronaut-http-server-netty'
+    implementation 'io.micronaut:micronaut-http-client'
+    implementation 'io.micronaut.session:micronaut-session'
+    implementation 'io.micronaut.security:micronaut-security-session'
+    implementation 'io.micronaut.views:micronaut-views-thymeleaf'
+    implementation 'io.micronaut.data:micronaut-data-hibernate-jpa'
+    implementation 'io.micronaut.sql:micronaut-hibernate-jpa:6.3.4'
+    implementation 'io.micronaut.sql:micronaut-jdbc-hikari:6.3.4'
+    implementation 'io.micronaut.flyway:micronaut-flyway'
+    implementation 'org.flywaydb:flyway-core:10.20.0'
+    implementation 'org.flywaydb:flyway-database-postgresql:10.20.0'
+    implementation 'io.micronaut.validation:micronaut-validation'
+    implementation 'io.micronaut.serde:micronaut-serde-jackson'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'io.micronaut:micronaut-management'
+    implementation 'io.projectreactor:reactor-core'
+
+    implementation 'org.freemarker:freemarker:2.3.34'
+    implementation 'org.apache.velocity:velocity-engine-core:2.3'
+    implementation 'org.mvel:mvel2:2.4.4.Final'
+    implementation 'com.nimbusds:nimbus-jose-jwt:9.37.4'
+    implementation 'commons-codec:commons-codec:1.17.2'
+    implementation 'org.apache.commons:commons-compress:1.24.0'
+
+    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'org.yaml:snakeyaml'
+    runtimeOnly 'ch.qos.logback:logback-classic:1.5.18'
+
+    implementation 'at.favre.lib:bcrypt:0.10.2'
+
+    testImplementation 'io.micronaut.test:micronaut-test-junit5'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testImplementation 'org.mockito:mockito-core:5.14.2'
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:junit-jupiter'
+}
+
+configurations.all {
+    resolutionStrategy {
+        force 'com.nimbusds:nimbus-jose-jwt:9.37.4'
+    }
+}
+
+tasks.named('shadowJar') {
+    mergeServiceFiles()
+}

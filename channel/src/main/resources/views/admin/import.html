@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Import','import', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">Administration</div>
+            <h1>Import data</h1>
+            <p class="sub">Import enrollments or users from CSV. Every row is validated before anything is written.</p>
+        </div>
+    </div>
+
+    <div class="two-col">
+        <section class="card">
+            <div class="card-head"><h2>Import enrollments</h2></div>
+            <p class="cell-sub">Columns: <code>student_email, course_code, cohort_name, status</code> — status is <code>active</code> or <code>pending</code>.</p>
+            <form th:action="@{/admin/import/enrollments(_csrf=${csrf})}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <div class="field">
+                    <label for="enrollFile">CSV file (max 2 MB)</label>
+                    <input class="input" type="file" id="enrollFile" name="file" accept=".csv,text/csv" required>
+                </div>
+                <div class="pill-row">
+                    <button class="btn btn-primary" type="submit">Import enrollments</button>
+                    <a class="btn btn-secondary" th:href="@{/admin/import/template/enrollments.csv}">Download template</a>
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="card-head"><h2>Import users</h2></div>
+            <p class="cell-sub">Columns: <code>username, email, display_name, role</code> — role is <code>STUDENT</code>, <code>INSTRUCTOR</code>, <code>TEACHING_ASSISTANT</code> or <code>SCHOOL_ADMIN</code>. Each imported user gets a setup email.</p>
+            <form th:action="@{/admin/import/users(_csrf=${csrf})}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <div class="field">
+                    <label for="userFile">CSV file (max 2 MB)</label>
+                    <input class="input" type="file" id="userFile" name="file" accept=".csv,text/csv" required>
+                </div>
+                <div class="pill-row">
+                    <button class="btn btn-primary" type="submit">Import users</button>
+                    <a class="btn btn-secondary" th:href="@{/admin/import/template/users.csv}">Download template</a>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <section class="card">
+        <div class="card-head"><h2>Legacy SIS transcript sync</h2></div>
+        <p class="cell-sub">Paste the XML transcript exported by the school's SIS to reconcile grade rows.</p>
+        <form th:action="@{/admin/import/transcript(_csrf=${csrf})}" method="post">
+            <input type="hidden" name="_csrf" th:value="${csrf}">
+            <div class="field">
+                <label for="transcriptXml">Transcript XML</label>
+                <textarea class="textarea" id="transcriptXml" name="transcriptXml" rows="6"
+                          placeholder="&lt;transcript&gt;&lt;grade student=&quot;alex@brightpath.example&quot; .../&gt;&lt;/transcript&gt;"></textarea>
+            </div>
+            <button class="btn btn-secondary" type="submit">Sync transcript</button>
+        </form>
+    </section>
+
+    <section class="card">
+        <div class="card-head"><h2>Recent import runs</h2></div>
+        <div class="empty" th:if="${jobs.isEmpty()}">
+            <span class="empty-ico" aria-hidden="true">📥</span>
+            <h3>No imports yet</h3>
+        </div>
+        <div class="table-wrap" th:unless="${jobs.isEmpty()}">
+            <table class="data">
+                <thead>
+                <tr><th>When</th><th>Kind</th><th class="num">Rows</th><th class="num">Imported</th><th class="num">Errors</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="job : ${jobs}">
+                    <td class="cell-sub" th:text="${#temporals.format(job.getCreatedAt(), 'MMM d, yyyy · HH:mm')}">date</td>
+                    <td><span class="badge badge-neutral" th:text="${job.getKind()}">kind</span></td>
+                    <td class="num" th:text="${job.getTotalRows()}">0</td>
+                    <td class="num" th:text="${job.getOkRows()}">0</td>
+                    <td class="num">
+                        <span class="badge badge-danger" th:if="${job.getErrorRows() > 0}" th:text="${job.getErrorRows()}">0</span>
+                        <span th:unless="${job.getErrorRows() > 0}">0</span>
+                    </td>
+                    <td>
+                        <span class="badge badge-success" th:if="${job.getStatus() == 'completed' and job.getErrorRows() == 0}"><span class="dot"></span>Completed</span>
+                        <span class="badge badge-warning" th:if="${job.getStatus() == 'completed' and job.getErrorRows() > 0}"><span class="dot"></span>Completed with errors</span>
+                        <span class="badge badge-danger" th:if="${job.getStatus() == 'failed'}"><span class="dot"></span>Failed</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

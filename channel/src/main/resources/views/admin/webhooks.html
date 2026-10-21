@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Webhooks','webhooks', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">Integration</div>
+            <h1>Webhooks</h1>
+            <p class="sub">Notify external systems about workflow events. Payloads are signed with HMAC-SHA256; every delivery attempt is recorded.</p>
+        </div>
+    </div>
+
+    <div class="two-col">
+        <section class="card">
+            <div class="card-head"><h2>Add an endpoint</h2></div>
+            <form th:action="@{/admin/webhooks}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <div class="field">
+                    <label for="name">Name</label>
+                    <input class="input" type="text" id="name" name="name" required maxlength="120"
+                           placeholder="e.g. Student information system">
+                </div>
+                <div class="field">
+                    <label for="url">URL</label>
+                    <input class="input" type="url" id="url" name="url" required
+                           placeholder="http://core-mock:8082/v1/hooks/grade-released">
+                    <div class="hint">The bundled vendor-core mock receives hooks at <code>/v1/hooks/{event}</code>.</div>
+                </div>
+                <div class="field">
+                    <label for="secret">Signing secret (leave blank to generate)</label>
+                    <input class="input" type="password" id="secret" name="secret" autocomplete="off">
+                </div>
+                <div class="field">
+                    <span class="label">Events</span>
+                    <div class="checkbox-row" th:each="eventType : ${eventTypes}">
+                        <input type="checkbox" th:id="${eventType}" name="eventTypes" th:value="${eventType}">
+                        <label th:for="${eventType}" style="margin: 0;"><code th:text="${eventType}">event</code></label>
+                    </div>
+                </div>
+                <button class="btn btn-primary" type="submit">Add endpoint</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="card-head"><h2>Endpoints</h2></div>
+            <div class="empty" th:if="${endpoints.isEmpty()}">
+                <span class="empty-ico" aria-hidden="true">🪝</span>
+                <h3>No webhooks configured</h3>
+            </div>
+            <div th:each="endpoint : ${endpoints}" style="padding: 0.7rem 0; border-bottom: 1px solid var(--ink-100);">
+                <div style="display: flex; justify-content: space-between; gap: 0.6rem;">
+                    <span class="cell-strong" th:text="${endpoint.getName()}">Name</span>
+                    <span class="badge badge-success" th:if="${endpoint.isEnabled()}"><span class="dot"></span>Enabled</span>
+                    <span class="badge badge-danger" th:unless="${endpoint.isEnabled()}"><span class="dot"></span>Disabled</span>
+                </div>
+                <div class="cell-sub" th:text="${endpoint.getUrl()}">url</div>
+                <div class="cell-sub" th:text="|events: ${endpoint.getEventTypes()}|">events</div>
+                <div class="row-actions" style="margin-top: 0.4rem;">
+                    <a class="btn btn-secondary btn-sm" th:href="@{/admin/webhooks/{id}/deliveries(id=${endpoint.getId()})}">Delivery history</a>
+                    <form class="inline-form" method="post" th:action="@{/admin/webhooks/{id}/toggle(id=${endpoint.getId()})}">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button class="btn btn-ghost btn-sm" type="submit" th:text="${endpoint.isEnabled() ? 'Disable' : 'Enable'}">Disable</button>
+                    </form>
+                    <form class="inline-form" method="post" th:action="@{/admin/webhooks/{id}/delete(id=${endpoint.getId()})}"
+                          th:attr="data-confirm='Delete this webhook endpoint?'">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+</body>
+</html>

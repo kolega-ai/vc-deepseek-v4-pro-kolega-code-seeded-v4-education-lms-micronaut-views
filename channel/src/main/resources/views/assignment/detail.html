@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page(${assignment.getTitle()},'courses', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/courses/{id}(id=${course.getId()})}" th:text="${course.getTitle()}">Course</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span th:text="${assignment.getTitle()}">Assignment</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker" th:text="|${course.getCode()} · ${assignment.getMaxPoints()} points|">points</div>
+            <h1 th:text="${assignment.getTitle()}">Assignment</h1>
+            <p class="sub" th:text="${assignment.getSummary()}">Summary</p>
+        </div>
+        <span>
+            <span class="badge badge-neutral" th:if="${assignment.getStatus() == 'draft'}"><span class="dot"></span>Draft</span>
+            <span class="badge badge-primary" th:if="${assignment.getStatus() == 'published'}"><span class="dot"></span>Published</span>
+            <span class="badge badge-info" th:if="${assignment.getStatus() == 'closed'}"><span class="dot"></span>Closed</span>
+            <span class="badge badge-neutral" th:if="${assignment.getStatus() == 'archived'}"><span class="dot"></span>Archived</span>
+        </span>
+    </div>
+
+    <div class="grid grid-main">
+        <div>
+            <section class="card">
+                <div class="card-head"><h2>Instructions</h2></div>
+                <p style="white-space: pre-wrap;" th:text="${assignment.getInstructions()}">Instructions</p>
+                <div class="kv-list" style="margin-top: 0.8rem;">
+                    <dt>Due</dt>
+                    <dd th:text="${#temporals.format(assignment.getDueAt(), 'EEE, MMM d, yyyy · HH:mm')}">due</dd>
+                    <dt>Available from</dt>
+                    <dd th:text="${assignment.getAvailableAt() != null ? #temporals.format(assignment.getAvailableAt(), 'EEE, MMM d, yyyy · HH:mm') : 'Immediately'}">available</dd>
+                    <dt>Late submissions</dt>
+                    <dd th:text="${assignment.isAllowLate() ? 'Allowed (marked late)' : 'Not allowed'}">late</dd>
+                    <dt>Files</dt>
+                    <dd th:text="|Up to ${assignment.getMaxFiles()} file(s) · allowed types: ${assignment.getAllowedFileTypes()}|">files</dd>
+                    <dt th:if="${cohort != null}">Cohort</dt>
+                    <dd th:if="${cohort != null}" th:text="${cohort.getName()}">cohort</dd>
+                </div>
+            </section>
+
+            <section class="card" th:if="${!rubric.isEmpty()}">
+                <div class="card-head"><h2>Grading rubric</h2></div>
+                <table class="rubric-table">
+                    <thead>
+                    <tr><th>Criterion</th><th>Description</th><th class="num">Points</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="criterion : ${rubric}">
+                        <td class="cell-strong" th:text="${criterion.name()}">Name</td>
+                        <td th:text="${criterion.description()}">Description</td>
+                        <td class="num" th:text="${criterion.points()}">0</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Staff workflow -->
+            <section class="card" th:if="${canManage}">
+                <div class="card-head"><h2>Workflow</h2></div>
+                <div class="pill-row" style="margin-bottom: 0.8rem;">
+                    <form class="inline-form" method="post" th:if="${assignment.getStatus() == 'draft'}"
+                          th:action="@{/assignments/{id}/transition(id=${assignment.getId()}, target='published')}">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button class="btn btn-primary" type="submit" th:disabled="${!canPublishOrRelease}">Publish to students</button>
+                    </form>
+                    <form class="inline-form" method="post" th:if="${assignment.getStatus() == 'published'}"
+                          th:action="@{/assignments/{id}/transition(id=${assignment.getId()}, target='closed')}"
+                          th:attr="data-confirm='Close this assignment to new submissions?'">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button class="btn btn-secondary" type="submit">Close submissions</button>
+                    </form>
+                    <form class="inline-form" method="post"
+                          th:if="${assignment.getStatus() == 'draft' or assignment.getStatus() == 'published' or assignment.getStatus() == 'closed'}"
+                          th:action="@{/assignments/{id}/transition(id=${assignment.getId()}, target='archived')}"
+                          th:attr="data-confirm='Archive this assignment?'">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button class="btn btn-ghost" type="submit">Archive</button>
+                    </form>
+                    <a class="btn btn-secondary" th:href="@{/assignments/{id}/submissions(id=${assignment.getId()})}">
+                        Grading queue →
+                    </a>
+                    <a class="btn btn-secondary" th:if="${assignment.getStatus() == 'draft'}"
+                       th:href="@{/assignments/{id}/edit(id=${assignment.getId()})}">Edit draft</a>
+                </div>
+                <form th:action="@{/assignments/{id}/extend(id=${assignment.getId()})}" method="post"
+                      th:if="${assignment.getStatus() != 'archived'}">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <div class="field-row" style="align-items: end;">
+                        <div class="field" style="margin: 0;">
+                            <label for="newDueAt">Extend due date</label>
+                            <input class="input" type="datetime-local" id="newDueAt" name="newDueAt" required>
+                        </div>
+                        <div class="field" style="margin: 0;">
+                            <label for="reason">Reason</label>
+                            <input class="input" type="text" id="reason" name="reason" placeholder="e.g. school holiday" maxlength="300">
+                        </div>
+                        <button class="btn btn-amber" type="submit" th:disabled="${!canPublishOrRelease}">Extend</button>
+                    </div>
+                    <div class="hint" th:if="${!canPublishOrRelease}">Only instructors or administrators can extend due dates.</div>
+                </form>
+            </section>
+
+            <!-- Student: released grade -->
+            <section class="card" th:if="${principal.isStudent() and mySubmission != null and mySubmission.getStatus() == 'released'}">
+                <div class="card-head"><h2>Your result</h2></div>
+                <div class="two-col">
+                    <div class="grade-tile">
+                        <div class="g-value" th:text="|${mySubmission.getReleasedGrade()} / ${assignment.getMaxPoints()}|">grade</div>
+                        <div class="g-label">Released grade</div>
+                    </div>
+                    <div>
+                        <h3>Feedback</h3>
+                        <p style="white-space: pre-wrap;" th:text="${mySubmission.getReleasedFeedback() != null ? mySubmission.getReleasedFeedback() : '(no written feedback)'}">feedback</p>
+                        <div class="cell-sub" th:text="|Released ${#temporals.format(mySubmission.getReleasedAt(), 'MMM d, yyyy · HH:mm')}|">released</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Student: submission form -->
+            <section class="card" th:if="${principal.isStudent()}">
+                <div class="card-head"><h2>Your submission</h2></div>
+
+                <div th:if="${mySubmission == null and (assignment.getStatus() == 'published') and (assignment.getAvailableAt() == null or assignment.getAvailableAt() <= now)}">
+                    <form th:action="@{/assignments/{id}/submit(id=${assignment.getId()}, _csrf=${csrf})}" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <div class="field">
+                            <label for="text">Your answer / notes</label>
+                            <textarea class="textarea" id="text" name="text" maxlength="20000"
+                                      placeholder="Write your answer, reflection or notes for the instructor…"></textarea>
+                        </div>
+                        <div class="field">
+                            <label for="files">Attachments</label>
+                            <input class="input" type="file" id="files" name="files" multiple
+                                   accept="*">
+                            <div class="hint" th:text="|Allowed: ${assignment.getAllowedFileTypes()}. Up to ${assignment.getMaxFiles()} file(s).|">hint</div>
+                        </div>
+                        <button class="btn btn-primary btn-lg" type="submit">Submit assignment</button>
+                    </form>
+                </div>
+
+                <div th:if="${mySubmission == null and assignment.getStatus() == 'published' and assignment.getAvailableAt() != null and assignment.getAvailableAt() > now}">
+                    <div class="alert alert-info">This assignment opens on
+                        <strong th:text="${#temporals.format(assignment.getAvailableAt(), 'EEE, MMM d, yyyy · HH:mm')}">date</strong>.
+                        You will be able to submit from that time.</div>
+                </div>
+
+                <div th:if="${mySubmission == null and (assignment.getStatus() == 'closed' or assignment.getStatus() == 'archived')}">
+                    <div class="alert alert-warning">This assignment is no longer accepting submissions.</div>
+                </div>
+
+                <div th:if="${mySubmission != null}">
+                    <div class="alert alert-info" th:if="${mySubmission.getStatus() == 'submitted'}">
+                        Submitted on <strong th:text="${#temporals.format(mySubmission.getSubmittedAt(), 'MMM d, yyyy · HH:mm')}">date</strong>.
+                        You can replace it until the due date, unless grading has started.
+                    </div>
+                    <div class="alert alert-warning" th:if="${mySubmission.getStatus() == 'late'}">
+                        Submitted late on <strong th:text="${#temporals.format(mySubmission.getSubmittedAt(), 'MMM d, yyyy · HH:mm')}">date</strong>.
+                    </div>
+                    <div class="alert alert-info" th:if="${mySubmission.getStatus() == 'graded'}">
+                        Grading is in progress. Your grade will appear once your instructor releases it.
+                    </div>
+                    <div class="alert alert-danger" th:if="${mySubmission.getStatus() == 'needs_resubmission'}">
+                        Your instructor asked you to submit a new version. Use the form below.
+                    </div>
+                    <a class="btn btn-primary" th:href="@{/submissions/{id}(id=${mySubmission.getId()})}">View your submission</a>
+
+                    <div class="kv-list" style="margin-bottom: 0.9rem;">
+                        <dt>Status</dt>
+                        <dd th:text="${mySubmission.getStatus()}">status</dd>
+                        <dt>Your text</dt>
+                        <dd style="white-space: pre-wrap;" th:text="${mySubmission.getTextContent() != null and !mySubmission.getTextContent().isBlank() ? mySubmission.getTextContent() : '(no text)'}">text</dd>
+                    </div>
+                    <div class="pill-row" th:if="${!submissionFiles.isEmpty()}">
+                        <span class="file-chip" th:each="file, iter : ${submissionFiles}">
+                            <a th:href="@{/files/{id}(id=${file.getFileId()})}" th:text="|Attachment ${iter.count}|">Attachment</a>
+                        </span>
+                    </div>
+
+                    <hr class="section-rule" th:if="${mySubmission.getStatus() == 'needs_resubmission'}">
+                    <form th:if="${mySubmission.getStatus() == 'needs_resubmission'}"
+                          th:action="@{/assignments/{id}/submit(id=${assignment.getId()}, _csrf=${csrf})}" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <div class="field">
+                            <label for="text2">New answer / notes</label>
+                            <textarea class="textarea" id="text2" name="text" maxlength="20000"></textarea>
+                        </div>
+                        <div class="field">
+                            <label for="files2">New attachments</label>
+                            <input class="input" type="file" id="files2" name="files" multiple>
+                            <div class="hint" th:text="|Allowed: ${assignment.getAllowedFileTypes()}. Up to ${assignment.getMaxFiles()} file(s).|">hint</div>
+                        </div>
+                        <button class="btn btn-primary" type="submit">Submit new version</button>
+                    </form>
+
+                    <hr class="section-rule" th:if="${canReplace}">
+                    <form th:if="${canReplace}"
+                          th:action="@{/assignments/{id}/submit(id=${assignment.getId()}, _csrf=${csrf})}" method="post" enctype="multipart/form-data"
+                          th:attr="data-confirm='Replace your current submission? Previous files will be removed.'">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <div class="field">
+                            <label for="text3">Replacement answer / notes</label>
+                            <textarea class="textarea" id="text3" name="text" maxlength="20000"></textarea>
+                        </div>
+                        <div class="field">
+                            <label for="files3">Replacement attachments</label>
+                            <input class="input" type="file" id="files3" name="files" multiple>
+                        </div>
+                        <button class="btn btn-secondary" type="submit">Replace submission</button>
+                    </form>
+
+                    <div class="hint" th:if="${mySubmission.getDraftGrade() != null}">Grading has started — this submission can no longer be replaced.</div>
+                </div>
+            </section>
+        </div>
+
+        <div>
+            <section class="card" th:if="${!principal.isStudent()}">
+                <div class="card-head"><h2>Overview</h2></div>
+                <div class="kv-list">
+                    <dt>Status</dt>
+                    <dd th:text="${assignment.getStatus()}">status</dd>
+                    <dt>Published</dt>
+                    <dd th:text="${assignment.getPublishedAt() != null ? #temporals.format(assignment.getPublishedAt(), 'MMM d, yyyy · HH:mm') : '—'}">published</dd>
+                    <dt>Closed</dt>
+                    <dd th:text="${assignment.getClosedAt() != null ? #temporals.format(assignment.getClosedAt(), 'MMM d, yyyy · HH:mm') : '—'}">closed</dd>
+                    <dt>Max points</dt>
+                    <dd th:text="${assignment.getMaxPoints()}">points</dd>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Grading','courses', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/courses/{id}(id=${course.getId()})}" th:text="${course.getTitle()}">Course</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <a th:href="@{/assignments/{id}(id=${assignment.getId()})}" th:text="${assignment.getTitle()}">Assignment</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span>Grading</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker">Grading</div>
+            <h1 th:text="${student != null ? student.getDisplayName() : 'Student'}">Student</h1>
+            <p class="sub" th:text="${assignment.getTitle()}">assignment</p>
+        </div>
+        <span>
+            <span class="badge badge-warning" th:if="${submission.getStatus() == 'submitted'}"><span class="dot"></span>Submitted</span>
+            <span class="badge badge-danger" th:if="${submission.getStatus() == 'late'}"><span class="dot"></span>Late</span>
+            <span class="badge badge-info" th:if="${submission.getStatus() == 'graded'}"><span class="dot"></span>Draft graded</span>
+            <span class="badge badge-success" th:if="${submission.getStatus() == 'released'}"><span class="dot"></span>Released</span>
+        </span>
+    </div>
+
+    <div class="grid grid-main">
+        <div>
+            <section class="card">
+                <div class="card-head">
+                    <h2>Submission preview</h2>
+                    <a class="btn btn-secondary btn-sm" th:href="@{/submissions/{id}(id=${submission.getId()})}">Full view</a>
+                </div>
+                <div class="kv-list">
+                    <dt>Submitted</dt>
+                    <dd th:text="${submission.getSubmittedAt() != null ? #temporals.format(submission.getSubmittedAt(), 'EEE, MMM d, yyyy · HH:mm') : '—'}">date</dd>
+                    <dt>Due</dt>
+                    <dd th:text="${#temporals.format(assignment.getDueAt(), 'EEE, MMM d, yyyy · HH:mm')}">due</dd>
+                    <dt>Max points</dt>
+                    <dd th:text="${assignment.getMaxPoints()}">points</dd>
+                </div>
+                <hr class="section-rule">
+                <h3>Text answer</h3>
+                <p style="white-space: pre-wrap;" th:text="${submission.getTextContent() != null and !submission.getTextContent().isBlank() ? submission.getTextContent() : '(no text submitted)'}">text</p>
+                <h3 th:if="${!files.isEmpty()}">Attachments</h3>
+                <div class="pill-row" th:if="${!files.isEmpty()}">
+                    <span class="file-chip" th:each="file, iter : ${files}">
+                        <a th:href="@{/files/{id}(id=${file.getFileId()})}" th:text="|Attachment ${iter.count}|">Attachment</a>
+                    </span>
+                </div>
+            </section>
+
+            <section class="card" th:if="${submission.getStatus() != 'released'}">
+                <div class="card-head"><h2>Grade this submission</h2></div>
+
+                <form th:action="@{/submissions/{id}/grade(id=${submission.getId()})}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <div th:if="${!rubric.isEmpty()}">
+                        <table class="rubric-table" style="margin-bottom: 0.9rem;">
+                            <thead>
+                            <tr><th>Criterion</th><th>Description</th><th class="num">Available</th><th class="num">Score</th></tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="criterion : ${rubric}">
+                                <td class="cell-strong" th:text="${criterion.name()}">Name</td>
+                                <td class="cell-sub" th:text="${criterion.description()}">Description</td>
+                                <td class="num" th:text="${criterion.points()}">0</td>
+                                <td class="num">
+                                    <input class="input" style="width: 90px; text-align: right;" type="number" min="0"
+                                           th:max="${criterion.points()}" step="0.5"
+                                           th:name="|scores.${criterion.key()}|" required aria-label="Score">
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <div class="hint">Total points are computed server-side from the rubric scores.</div>
+                    </div>
+                    <div class="field" th:if="${rubric.isEmpty()}">
+                        <label for="overallPoints">Points awarded (0 – <span th:text="${assignment.getMaxPoints()}">100</span>)</label>
+                        <input class="input" style="max-width: 180px;" type="number" id="overallPoints" name="overallPoints"
+                               min="0" th:max="${assignment.getMaxPoints()}" step="0.5" required>
+                    </div>
+                    <div class="field">
+                        <label for="feedback">Feedback to the student <span class="hint" style="display:inline;">(released with the grade)</span></label>
+                        <textarea class="textarea" id="feedback" name="feedback" maxlength="10000"
+                                  th:text="${submission.getDraftFeedback()}">Feedback</textarea>
+                    </div>
+                    <div class="field">
+                        <label for="privateNote">Private grading note <span class="hint" style="display:inline;">(staff only — never shown to students)</span></label>
+                        <textarea class="textarea" id="privateNote" name="privateNote" maxlength="5000"
+                                  th:text="${submission.getDraftPrivateNote()}">Note</textarea>
+                    </div>
+                    <div class="form-actions" style="justify-content: flex-start;">
+                        <button class="btn btn-primary" type="submit">Save draft grade</button>
+                        <span class="cell-sub">Students cannot see draft grades until release.</span>
+                    </div>
+                </form>
+            </section>
+        </div>
+
+        <div>
+            <section class="card">
+                <div class="card-head"><h2>Release &amp; workflow</h2></div>
+                <div class="kv-list" style="margin-bottom: 0.9rem;">
+                    <dt>Draft grade</dt>
+                    <dd>
+                        <span class="badge badge-info" th:if="${submission.getDraftGrade() != null}"
+                              th:text="|${submission.getDraftGrade()} / ${assignment.getMaxPoints()}|">grade</span>
+                        <span th:unless="${submission.getDraftGrade() != null}" class="cell-sub">No draft saved yet</span>
+                    </dd>
+                    <dt>Last graded</dt>
+                    <dd th:text="${submission.getDraftGradedAt() != null ? #temporals.format(submission.getDraftGradedAt(), 'MMM d, yyyy · HH:mm') : '—'}">date</dd>
+                </div>
+                <div th:if="${submission.getStatus() == 'graded'}">
+                    <form method="post" th:action="@{/submissions/{id}/release(id=${submission.getId()})}"
+                          th:attr="data-confirm='Release this grade to the student? The grade is final.'">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button class="btn btn-primary btn-block" type="submit" th:disabled="${!canPublishOrRelease}">
+                            Release grade to student
+                        </button>
+                    </form>
+                    <div class="hint" th:if="${!canPublishOrRelease}">Teaching assistants can save drafts but only instructors or administrators can release.</div>
+                </div>
+                <div th:if="${submission.getStatus() == 'released'}">
+                    <div class="grade-tile">
+                        <div class="g-value" th:text="|${submission.getReleasedGrade()} / ${assignment.getMaxPoints()}|">grade</div>
+                        <div class="g-label">Released</div>
+                    </div>
+                </div>
+                <div th:if="${submission.getStatus() != 'released' and submission.getStatus() != 'needs_resubmission'}">
+                    <form method="post" th:action="@{/submissions/{id}/resubmission-request(id=${submission.getId()})}"
+                          style="margin-top: 0.7rem;">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <div class="field">
+                            <label for="note">Request a new version (note to the student)</label>
+                            <textarea class="textarea" id="note" name="note" maxlength="2000"
+                                      placeholder="What should the student improve?"></textarea>
+                        </div>
+                        <button class="btn btn-amber" type="submit">Request resubmission</button>
+                    </form>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-head"><h2>Grade history</h2></div>
+                <div class="empty" th:if="${history.isEmpty()}">
+                    <span class="empty-ico" aria-hidden="true">📝</span>
+                    <h3>No changes yet</h3>
+                </div>
+                <ul class="timeline" th:unless="${history.isEmpty()}">
+                    <li th:each="change : ${history}">
+                        <div class="t-date" th:text="${#temporals.format(change.getCreatedAt(), 'MMM d, HH:mm')}">date</div>
+                        <div class="t-body">
+                            <span class="badge badge-primary" th:text="${change.getChangeType()}">type</span>
+                            <span th:if="${change.getOldGrade() != null}" th:text="|${change.getOldGrade()} → ${change.getNewGrade()}|">grades</span>
+                            <span th:if="${change.getOldGrade() == null and change.getNewGrade() != null}" th:text="|grade: ${change.getNewGrade()}|">grade</span>
+                            <span th:if="${change.getNote() != null and !change.getNote().isBlank()}" class="cell-sub" th:text="|note: ${change.getNote()}|">note</span>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+        </div>
+    </div>
+</main>
+</body>
+</html>

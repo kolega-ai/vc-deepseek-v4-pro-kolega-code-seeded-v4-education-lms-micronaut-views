@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page(${course.getTitle()},'courses', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/courses}">Catalog</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span th:text="${course.getCode()}">CS-101</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker" th:text="|${course.getCategory()} · ${course.getLevel()}|">Category · Level</div>
+            <h1 th:text="${course.getTitle()}">Course</h1>
+            <p class="sub" th:text="${course.getSubtitle()}">Subtitle</p>
+        </div>
+        <div class="pill-row" th:if="${canManage}">
+            <a class="btn btn-secondary" th:href="@{/admin/courses/{id}(id=${course.getId()})}">Manage course</a>
+            <a class="btn btn-primary" th:if="${principal.canPublishOrRelease(course.getId())}"
+               th:href="@{/assignments/new(courseId=${course.getId()})}">New assignment</a>
+        </div>
+    </div>
+
+    <div class="grid grid-main">
+        <div>
+            <section class="card">
+                <div class="card-head"><h2>About this course</h2></div>
+                <p th:text="${course.getDescription()}">Description</p>
+                <hr class="section-rule" th:if="${course.getSyllabus() != null}">
+                <h3 th:if="${course.getSyllabus() != null}">Syllabus</h3>
+                <p th:if="${course.getSyllabus() != null}" style="white-space: pre-wrap;" th:text="${course.getSyllabus()}">Syllabus</p>
+            </section>
+
+            <div class="alert alert-info" th:if="${!canViewContent}">
+                This is a course preview. Enroll in a cohort below to access lessons, resources and assignments.
+            </div>
+            <section class="card" th:if="${canViewContent}">
+                <div class="card-head">
+                    <h2>Assignments</h2>
+                    <a th:href="@{/courses/{id}/discussions(id=${course.getId()})}">Discussion board →</a>
+                </div>
+                <div class="empty" th:if="${assignments.isEmpty()}">
+                    <span class="empty-ico" aria-hidden="true">📝</span>
+                    <h3>No assignments yet</h3>
+                    <p>Assignments will appear here once published.</p>
+                </div>
+                <div class="table-wrap" th:unless="${assignments.isEmpty()}">
+                    <table class="data">
+                        <thead>
+                        <tr><th>Assignment</th><th>Due</th><th>Status</th><th>Your work</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="row : ${assignments}">
+                            <td>
+                                <a class="cell-strong" th:href="@{/assignments/{id}(id=${row.get('assignment').getId()})}"
+                                   th:text="${row.get('assignment').getTitle()}">Assignment</a>
+                                <div class="cell-sub" th:text="|${row.get('assignment').getMaxPoints()} points|">points</div>
+                            </td>
+                            <td class="cell-sub" th:text="${#temporals.format(row.get('assignment').getDueAt(), 'MMM d, yyyy · HH:mm')}">due</td>
+                            <td>
+                                <span class="badge badge-neutral" th:if="${row.get('assignment').getStatus() == 'draft'}"><span class="dot"></span>Draft</span>
+                                <span class="badge badge-primary" th:if="${row.get('assignment').getStatus() == 'published'}"><span class="dot"></span>Published</span>
+                                <span class="badge badge-info" th:if="${row.get('assignment').getStatus() == 'closed'}"><span class="dot"></span>Closed</span>
+                                <span class="badge badge-neutral" th:if="${row.get('assignment').getStatus() == 'archived'}"><span class="dot"></span>Archived</span>
+                            </td>
+                            <td>
+                                <span th:if="${row.get('submission') == null}" class="cell-sub">Not started</span>
+                                <span th:if="${row.get('submission') != null and row.get('submission').getStatus() == 'submitted'}" class="badge badge-warning"><span class="dot"></span>Submitted</span>
+                                <span th:if="${row.get('submission') != null and row.get('submission').getStatus() == 'late'}" class="badge badge-danger"><span class="dot"></span>Late</span>
+                                <span th:if="${row.get('submission') != null and row.get('submission').getStatus() == 'graded'}" class="badge badge-info"><span class="dot"></span>Graded</span>
+                                <span th:if="${row.get('submission') != null and row.get('submission').getStatus() == 'released'}" class="badge badge-success"><span class="dot"></span>Released</span>
+                                <span th:if="${row.get('submission') != null and row.get('submission').getStatus() == 'needs_resubmission'}" class="badge badge-danger"><span class="dot"></span>Resubmit</span>
+                            </td>
+                            <td><a class="btn btn-secondary btn-sm" th:href="@{/assignments/{id}(id=${row.get('assignment').getId()})}">Open</a></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="card" th:if="${canViewContent}">
+                <div class="card-head"><h2>Course content</h2></div>
+                <div class="empty" th:if="${modules.isEmpty()}">
+                    <span class="empty-ico" aria-hidden="true">📖</span>
+                    <h3>Content is being prepared</h3>
+                </div>
+                <details class="module" th:each="module : ${modules}" th:open="${modules.size() == 1}">
+                    <summary>
+                        <span th:text="|Module ${module.getPosition()}: ${module.getTitle()}|">Module</span>
+                    </summary>
+                    <div class="module-body">
+                        <p class="cell-sub" th:if="${module.getDescription() != null}" th:text="${module.getDescription()}">Description</p>
+                        <div class="empty" th:if="${lessonsByModule.get(module.getId()) == null or lessonsByModule.get(module.getId()).isEmpty()}">
+                            <p>No lessons in this module yet.</p>
+                        </div>
+                        <div class="lesson" th:each="lesson : ${lessonsByModule.get(module.getId())}">
+                            <div style="flex:1;">
+                                <div class="l-title" th:text="${lesson.getTitle()}">Lesson</div>
+                                <div class="l-meta" th:text="|${lesson.getContentType()} · ${lesson.getDurationMinutes() != null ? lesson.getDurationMinutes() + ' min' : 'self-paced'}|">meta</div>
+                                <details th:if="${lesson.getContent() != null and !lesson.getContent().isBlank()}">
+                                    <summary class="cell-sub" style="cursor:pointer;">Read lesson content</summary>
+                                    <div class="lesson-content" th:text="${lesson.getContent()}">content</div>
+                                </details>
+                                <a th:if="${lesson.getVideoUrl() != null}" th:href="${lesson.getVideoUrl()}" rel="noopener noreferrer" target="_blank">Watch video ↗</a>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </section>
+
+            <section class="card" th:if="${canViewContent and !resources.isEmpty()}">
+                <div class="card-head"><h2>Resources</h2></div>
+                <div class="pill-row">
+                    <span th:each="resource : ${resources}" class="file-chip"
+                          th:if="${resource.getExternalUrl() != null}">
+                        <a th:href="${resource.getExternalUrl()}" rel="noopener noreferrer" target="_blank"
+                           th:text="${resource.getTitle()}">Link</a>
+                    </span>
+                    <span th:each="resource : ${resources}" class="file-chip"
+                          th:if="${resource.getFileId() != null}">
+                        <a th:href="@{/files/{id}(id=${resource.getFileId()})}" th:text="${resource.getTitle()}">File</a>
+                        <a th:href="@{/files/{id}(id=${resource.getFileId()}, embed=1)}" target="_blank" rel="noopener">Preview</a>
+                    </span>
+                </div>
+            </section>
+
+            <section class="card" th:if="${canViewContent and !classStandings.isEmpty()}">
+                <div class="card-head"><h2>Class standings</h2></div>
+                <p class="cell-sub">Cumulative released points across every cohort in this course.</p>
+                <div class="table-wrap">
+                    <table class="data">
+                        <thead><tr><th>Student ID</th><th>Cohort ID</th><th class="num">Total points</th></tr></thead>
+                        <tbody>
+                        <tr th:each="row : ${classStandings}">
+                            <td th:text="${row.get('studentId')}">id</td>
+                            <td th:text="${row.get('cohortId')}">id</td>
+                            <td class="num" th:text="${row.get('totalPoints')}">0</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <div>
+            <section class="card">
+                <div class="card-head"><h2>Cohorts</h2></div>
+                <div class="empty" th:if="${cohorts.isEmpty()}">
+                    <span class="empty-ico" aria-hidden="true">🗓️</span>
+                    <h3>No cohorts scheduled</h3>
+                </div>
+                <div th:each="cohort : ${cohorts}" style="border-bottom: 1px solid var(--ink-100); padding: 0.7rem 0;">
+                    <div class="cell-strong" th:text="${cohort.getName()}">Cohort</div>
+                    <div class="cell-sub" th:text="|${#temporals.format(cohort.getStartDate(), 'MMM d, yyyy')} → ${#temporals.format(cohort.getEndDate(), 'MMM d, yyyy')}|">dates</div>
+                    <div class="cell-sub" th:text="${cohort.getScheduleSummary()}">schedule</div>
+                    <div style="margin-top: 0.4rem;" th:if="${principal.isStudent()}">
+                        <span th:if="${myEnrollments.containsKey(cohort.getId()) and myEnrollments.get(cohort.getId()).getStatus() == 'active'}">
+                            <a class="btn btn-secondary btn-sm" th:href="@{/cohorts/{id}(id=${cohort.getId()})}">Open cohort dashboard</a>
+                        </span>
+                        <span th:if="${myEnrollments.containsKey(cohort.getId()) and myEnrollments.get(cohort.getId()).getStatus() == 'pending'}">
+                            <span class="badge badge-warning"><span class="dot"></span>Awaiting approval</span>
+                        </span>
+                        <form th:if="${!myEnrollments.containsKey(cohort.getId())}" method="post" class="inline-form"
+                              th:action="@{/courses/{id}/enroll(id=${course.getId()}, cohortId=${cohort.getId()})}"
+                              th:attr="data-confirm=|Request enrollment in '${cohort.getName()}'?|">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button class="btn btn-primary btn-sm" type="submit"
+                                    th:disabled="${!course.isEnrollmentOpen()}">Request enrollment</button>
+                            <span class="cell-sub" th:if="${!course.isEnrollmentOpen()}">Enrollment is closed</span>
+                        </form>
+                    </div>
+                    <div style="margin-top: 0.4rem;" th:if="${!principal.isStudent()}">
+                        <a class="btn btn-secondary btn-sm" th:href="@{/cohorts/{id}(id=${cohort.getId()})}">Open cohort</a>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+</body>
+</html>

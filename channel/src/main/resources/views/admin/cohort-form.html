@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page(${cohort == null ? 'New cohort' : 'Edit cohort'},'cohorts', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/admin/cohorts}">Cohorts</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span th:text="${cohort == null ? 'New cohort' : 'Edit'}">Edit</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker">Administration</div>
+            <h1 th:text="${cohort == null ? 'New cohort' : 'Edit: ' + cohort.getName()}">New cohort</h1>
+        </div>
+    </div>
+
+    <form class="form-card"
+          th:action="@{${cohort == null ? '/admin/cohorts' : '/admin/cohorts/' + cohort.getId() + '/edit'}}"
+          method="post">
+        <input type="hidden" name="_csrf" th:value="${csrf}">
+        <div class="field">
+            <label for="courseId">Course</label>
+            <select class="select" id="courseId" name="courseId" required>
+                <option value="">Choose a course…</option>
+                <option th:each="course : ${courses.values()}" th:value="${course.getId()}" th:text="|${course.getCode()} — ${course.getTitle()}|"
+                        th:selected="${cohort != null and cohort.getCourseId() == course.getId()}">Course</option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="name">Cohort name</label>
+            <input class="input" type="text" id="name" name="name" required maxlength="200"
+                   th:value="${cohort != null ? cohort.getName() : ''}" placeholder="e.g. Fall 2026 — Evening group">
+        </div>
+        <div class="field">
+            <label for="scheduleSummary">Schedule summary</label>
+            <input class="input" type="text" id="scheduleSummary" name="scheduleSummary" maxlength="500"
+                   th:value="${cohort != null ? cohort.getScheduleSummary() : ''}"
+                   placeholder="e.g. Tue & Thu, 18:00–20:00, room 4B">
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label for="startDate">Start date</label>
+                <input class="input" type="date" id="startDate" name="startDate" required
+                       th:value="${cohort != null ? cohort.getStartDate() : ''}">
+            </div>
+            <div class="field">
+                <label for="endDate">End date</label>
+                <input class="input" type="date" id="endDate" name="endDate" required
+                       th:value="${cohort != null ? cohort.getEndDate() : ''}">
+            </div>
+            <div class="field">
+                <label for="maxStudents">Max students</label>
+                <input class="input" type="number" id="maxStudents" name="maxStudents" min="1" max="200"
+                       th:value="${cohort != null ? cohort.getMaxStudents() : '30'}">
+            </div>
+        </div>
+        <div class="form-actions">
+            <a class="btn btn-ghost" th:href="@{/admin/cohorts}">Cancel</a>
+            <button class="btn btn-primary" type="submit" th:text="${cohort == null ? 'Create cohort' : 'Save changes'}">Save</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

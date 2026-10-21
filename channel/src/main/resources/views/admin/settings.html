@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Settings','settings', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">Administration</div>
+            <h1>Organization settings</h1>
+            <p class="sub">These values are read server-side; limits are never accepted from the client.</p>
+        </div>
+    </div>
+
+    <form class="form-card" th:action="@{/admin/settings}" method="post">
+        <input type="hidden" name="_csrf" th:value="${csrf}">
+        <div class="field-row">
+            <div class="field">
+                <label for="org_name">Organization name</label>
+                <input class="input" type="text" id="org_name" name="values[org_name]" th:value="${values.get('org_name')}" required>
+            </div>
+            <div class="field">
+                <label for="support_email">Support email</label>
+                <input class="input" type="email" id="support_email" name="values[support_email]" th:value="${values.get('support_email')}" required>
+            </div>
+        </div>
+        <div class="field-row-3">
+            <div class="field">
+                <label for="upload_max_mb">Max upload size (MB)</label>
+                <input class="input" type="number" id="upload_max_mb" name="values[upload_max_mb]" min="1" max="500" th:value="${values.get('upload_max_mb')}">
+            </div>
+            <div class="field">
+                <label for="student_max_files_per_submission">Max files per submission</label>
+                <input class="input" type="number" id="student_max_files_per_submission" name="values[student_max_files_per_submission]" min="1" max="10" th:value="${values.get('student_max_files_per_submission')}">
+            </div>
+            <div class="field">
+                <label for="assignment_auto_close_grace_hours">Auto-close grace (hours after due)</label>
+                <input class="input" type="number" id="assignment_auto_close_grace_hours" name="values[assignment_auto_close_grace_hours]" min="0" max="720" th:value="${values.get('assignment_auto_close_grace_hours')}">
+            </div>
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label for="due_reminder_window_hours">Reminder window (hours before due)</label>
+                <input class="input" type="number" id="due_reminder_window_hours" name="values[due_reminder_window_hours]" min="1" max="168" th:value="${values.get('due_reminder_window_hours')}">
+            </div>
+            <div class="field">
+                <label for="allow_self_registration">Self registration</label>
+                <select class="select" id="allow_self_registration" name="values[allow_self_registration]">
+                    <option value="true" th:selected="${values.get('allow_self_registration') == 'true'}">Enabled</option>
+                    <option value="false" th:selected="${values.get('allow_self_registration') == 'false'}">Disabled</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-primary" type="submit">Save settings</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

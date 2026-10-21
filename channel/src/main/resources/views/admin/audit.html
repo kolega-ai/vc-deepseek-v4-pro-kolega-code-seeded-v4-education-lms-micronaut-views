@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Audit log','audit', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">Administration</div>
+            <h1>Audit log</h1>
+            <p class="sub">Append-only record of every state transition and privileged action. Records cannot be edited or deleted.</p>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <form th:action="@{/admin/audit}" method="get">
+            <input class="input grow" type="search" name="actor" th:value="${actor}" placeholder="Actor username…" aria-label="Filter by actor">
+            <input class="input" type="search" name="action" th:value="${action}" placeholder="Action e.g. grade_released" aria-label="Filter by action">
+            <select class="select" name="resourceType" aria-label="Filter by resource type">
+                <option value="">All resources</option>
+                <option value="submission" th:selected="${resourceType == 'submission'}">Submission</option>
+                <option value="assignment" th:selected="${resourceType == 'assignment'}">Assignment</option>
+                <option value="enrollment" th:selected="${resourceType == 'enrollment'}">Enrollment</option>
+                <option value="user" th:selected="${resourceType == 'user'}">User</option>
+                <option value="course" th:selected="${resourceType == 'course'}">Course</option>
+                <option value="cohort" th:selected="${resourceType == 'cohort'}">Cohort</option>
+                <option value="file" th:selected="${resourceType == 'file'}">File</option>
+                <option value="grades_export" th:selected="${resourceType == 'grades_export'}">Grades export</option>
+            </select>
+            <input class="input" type="date" name="from" th:value="${from}" aria-label="From date">
+            <input class="input" type="date" name="to" th:value="${to}" aria-label="To date">
+            <button class="btn btn-primary" type="submit">Filter</button>
+        </form>
+    </div>
+
+    <div class="empty" th:if="${events.isEmpty()}">
+        <span class="empty-ico" aria-hidden="true">🧾</span>
+        <h3>No audit events match</h3>
+    </div>
+
+    <div class="table-wrap" th:unless="${events.isEmpty()}">
+        <table class="data">
+            <thead>
+            <tr><th>When</th><th>Actor</th><th>Action</th><th>Resource</th><th>Before → After</th><th>Authorization basis</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="event : ${events}">
+                <td class="cell-sub" th:text="${#temporals.format(event.getCreatedAt(), 'MMM d, yyyy · HH:mm:ss')}">time</td>
+                <td>
+                    <span class="cell-strong" th:text="${event.getActorUsername() != null ? event.getActorUsername() : 'system'}">actor</span>
+                    <div class="cell-sub" th:text="${event.getActorRole() != null ? event.getActorRole() : 'SYSTEM'}">role</div>
+                </td>
+                <td><span class="badge badge-neutral" th:text="${event.getAction()}">action</span></td>
+                <td>
+                    <span th:text="${event.getResourceType()}">type</span>
+                    <span class="cell-sub" th:text="${event.getResourceId() != null ? '#' + event.getResourceId() : ''}">id</span>
+                </td>
+                <td class="cell-sub" style="max-width: 260px; overflow: hidden; text-overflow: ellipsis;"
+                    th:title="${event.getBeforeState() + ' → ' + event.getAfterState()}"
+                    th:text="${event.getBeforeState() != null or event.getAfterState() != null ? (event.getBeforeState() != null ? event.getBeforeState() : '∅') + ' → ' + (event.getAfterState() != null ? event.getAfterState() : '∅') : '—'}">states</td>
+                <td class="cell-sub" th:text="${event.getAuthzBasis()}">basis</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="pagination" th:if="${totalPages > 1}" aria-label="Audit pages">
+        <a th:href="@{/admin/audit(page=${page - 1}, action=${action}, actor=${actor}, resourceType=${resourceType}, from=${from}, to=${to})}"
+           th:if="${page > 0}" rel="prev">‹ Prev</a>
+        <span class="disabled" th:if="${page <= 0}">‹ Prev</span>
+        <span class="current" th:text="|Page ${page + 1} of ${totalPages}|">Page 1</span>
+        <a th:href="@{/admin/audit(page=${page + 1}, action=${action}, actor=${actor}, resourceType=${resourceType}, from=${from}, to=${to})}"
+           th:if="${page < totalPages - 1}" rel="next">Next ›</a>
+        <span class="disabled" th:if="${page >= totalPages - 1}">Next ›</span>
+    </nav>
+</main>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Brightpath channel (user-facing tier) image
+FROM eclipse-temurin:21-jdk AS builder
+WORKDIR /workspace
+COPY . .
+RUN ./gradlew :channel:shadowJar --no-daemon -q
+
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY --from=builder /workspace/channel/build/libs/channel-1.0.0-all.jar /app/app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -1,0 +1,13 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'brightpath-lms'
+
+include 'channel'
+include 'decision'
+include 'core-mock'
+include 'batch'

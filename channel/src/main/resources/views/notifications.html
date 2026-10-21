@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Notifications','notifications', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">Inbox</div>
+            <h1>Notifications</h1>
+            <p class="sub">Workflow events from your courses and accounts.</p>
+        </div>
+        <form method="post" th:action="@{/notifications/read-all}">
+            <input type="hidden" name="_csrf" th:value="${csrf}">
+            <button class="btn btn-secondary" type="submit">Mark all as read</button>
+        </form>
+    </div>
+
+    <div class="empty" th:if="${notifications.isEmpty()}">
+        <span class="empty-ico" aria-hidden="true">🔔</span>
+        <h3>You're all caught up</h3>
+        <p>New notifications will appear here.</p>
+    </div>
+
+    <section class="card" th:unless="${notifications.isEmpty()}">
+        <div th:each="notification : ${notifications}" class="comment">
+            <span aria-hidden="true" style="font-size: 1.1rem;"
+                  th:text="${notification.getReadAt() == null ? '🔵' : '⚪'}">icon</span>
+            <div class="c-body">
+                <div>
+                    <span class="cell-strong" th:text="${notification.getTitle()}">Title</span>
+                    <span class="badge badge-neutral" th:text="${notification.getKind()}" style="margin-left: 0.4rem;">kind</span>
+                </div>
+                <div class="c-text" th:text="${notification.getBody()}">Body</div>
+                <div class="c-meta" th:text="${#temporals.format(notification.getCreatedAt(), 'MMM d, yyyy · HH:mm')}">time</div>
+                <form class="inline-form" method="post" th:action="@{/notifications/{id}/read(id=${notification.getId()})}">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <button class="btn btn-secondary btn-sm" type="submit">Open</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <nav class="pagination" th:if="${totalPages > 1}" aria-label="Notification pages">
+        <a th:href="@{/notifications(page=${page - 1})}" th:if="${page > 0}" rel="prev">‹ Prev</a>
+        <span class="disabled" th:if="${page <= 0}">‹ Prev</span>
+        <span class="current" th:text="|Page ${page + 1} of ${totalPages}|">Page 1</span>
+        <a th:href="@{/notifications(page=${page + 1})}" th:if="${page < totalPages - 1}" rel="next">Next ›</a>
+        <span class="disabled" th:if="${page >= totalPages - 1}">Next ›</span>
+    </nav>
+</main>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page(${assignment == null ? 'New assignment' : 'Edit assignment'},'courses', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/courses/{id}(id=${course.getId()})}" th:text="${course.getTitle()}">Course</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span th:text="${assignment == null ? 'New assignment' : 'Edit assignment'}">Edit</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker" th:text="${course.getCode()}">course</div>
+            <h1 th:text="${assignment == null ? 'New assignment' : 'Edit: ' + assignment.getTitle()}">New assignment</h1>
+        </div>
+    </div>
+
+    <form class="form-card wide"
+          th:action="@{${assignment == null ? '/assignments' : '/assignments/' + assignment.getId() + '/edit'}}"
+          method="post">
+        <input type="hidden" name="_csrf" th:value="${csrf}">
+        <input type="hidden" name="courseId" th:value="${course.getId()}">
+        <input type="hidden" name="rubricJson" id="rubricJson" value="[]">
+
+        <div class="field">
+            <label for="title">Title</label>
+            <input class="input" type="text" id="title" name="title" required maxlength="200"
+                   th:value="${assignment != null ? assignment.getTitle() : (form != null ? form.title() : '')}"
+                   placeholder="e.g. Midterm project: system design report">
+        </div>
+        <div class="field">
+            <label for="summary">Short summary <span class="hint" style="display:inline;">(shown in lists)</span></label>
+            <input class="input" type="text" id="summary" name="summary" maxlength="500"
+                   th:value="${assignment != null ? assignment.getSummary() : ''}"
+                   placeholder="One line describing the task">
+        </div>
+        <div class="field">
+            <label for="instructions">Instructions for students</label>
+            <textarea class="textarea" id="instructions" name="instructions" required
+                      th:text="${assignment != null ? assignment.getInstructions() : ''}"
+                      placeholder="Describe the task, deliverables and expectations…"></textarea>
+        </div>
+
+        <div class="field-row-3">
+            <div class="field">
+                <label for="dueAt">Due date and time</label>
+                <input class="input" type="datetime-local" id="dueAt" name="dueAt" required
+                       th:value="${assignment != null ? #temporals.format(assignment.getDueAt(), 'yyyy-MM-dd\'T\'HH:mm') : ''}">
+            </div>
+            <div class="field">
+                <label for="availableAt">Available from (optional)</label>
+                <input class="input" type="datetime-local" id="availableAt" name="availableAt"
+                       th:value="${assignment != null and assignment.getAvailableAt() != null ? #temporals.format(assignment.getAvailableAt(), 'yyyy-MM-dd\'T\'HH:mm') : ''}">
+            </div>
+            <div class="field">
+                <label for="cohortId">Cohort (optional — leave empty for whole course)</label>
+                <select class="select" id="cohortId" name="cohortId">
+                    <option value="">All cohorts</option>
+                    <option th:each="c : ${cohorts}" th:value="${c.getId()}" th:text="${c.getName()}"
+                            th:selected="${assignment != null and assignment.getCohortId() == c.getId()}">Cohort</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="field-row-3">
+            <div class="field">
+                <label for="maxPoints">Max points</label>
+                <input class="input" type="number" id="maxPoints" name="maxPoints" required min="1" max="1000" step="0.5"
+                       th:value="${assignment != null ? assignment.getMaxPoints() : '100'}">
+            </div>
+            <div class="field">
+                <label for="maxFiles">Max files per submission</label>
+                <input class="input" type="number" id="maxFiles" name="maxFiles" min="1" max="10"
+                       th:value="${assignment != null ? assignment.getMaxFiles() : '3'}">
+            </div>
+            <div class="field">
+                <label for="allowedFileTypes">Allowed file types</label>
+                <input class="input" type="text" id="allowedFileTypes" name="allowedFileTypes"
+                       th:value="${assignment != null ? assignment.getAllowedFileTypes() : 'pdf,docx,zip'}"
+                       placeholder="pdf,docx,zip">
+            </div>
+        </div>
+
+        <div class="checkbox-row">
+            <input type="checkbox" id="allowLate" name="allowLate" value="true"
+                   th:checked="${assignment != null ? assignment.isAllowLate() : true}">
+            <label for="allowLate" style="margin: 0;">Allow late submissions (marked as late)</label>
+        </div>
+
+        <hr class="section-rule">
+        <h3>Grading rubric <span class="hint" style="display:inline; font-weight: 400;">(optional — total must not exceed max points)</span></h3>
+        <p class="cell-sub">Add one row per criterion. Instructors score each criterion when grading.</p>
+        <div class="table-wrap" style="margin-bottom: 0.7rem;">
+            <table class="data" id="rubric-table">
+                <thead>
+                <tr><th>Criterion name</th><th style="width: 40%;">What “full points” means</th><th class="num" style="width: 110px;">Points</th><th style="width: 60px;"></th></tr>
+                </thead>
+                <tbody id="rubric-rows"></tbody>
+            </table>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="add-rubric-row">+ Add criterion</button>
+        <details style="margin-top: 0.8rem;">
+            <summary class="cell-sub" style="cursor: pointer;">Edit rubric JSON directly</summary>
+            <textarea class="textarea" id="rubric-json-raw" style="font-family: ui-monospace, Menlo, monospace; font-size: 0.82rem; min-height: 120px;">[]</textarea>
+        </details>
+
+        <div class="form-actions">
+            <a class="btn btn-ghost" th:href="@{/courses/{id}(id=${course.getId()})}">Cancel</a>
+            <button class="btn btn-primary" type="submit" th:text="${assignment == null ? 'Create draft assignment' : 'Save changes'}">Save</button>
+        </div>
+    </form>
+
+    <script type="application/json" id="rubric-initial"
+            th:text="${assignment != null and assignment.getRubric() != null and assignment.getRubric() != '[]' ? assignment.getRubric() : '[]'}">[]</script>
+</main>
+</body>
+</html>

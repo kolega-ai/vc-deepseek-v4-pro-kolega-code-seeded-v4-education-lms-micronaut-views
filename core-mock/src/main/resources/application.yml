@@ -1,0 +1,37 @@
+micronaut:
+  application:
+    name: brightpath-core-mock
+  server:
+    port: ${COREMOCK_PORT:8082}
+  management:
+    endpoints:
+      health:
+        enabled: true
+datasources:
+  default:
+    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:5432/coremock_db}
+    username: ${DATASOURCE_USERNAME:brightpath}
+    password: ${DATASOURCE_PASSWORD:brightpath_dev_password}
+    driver-class-name: org.postgresql.Driver
+    db-type: postgres
+flyway:
+  datasources:
+    default:
+      enabled: true
+jpa:
+  default:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        hbm2ddl:
+          auto: none
+        jdbc:
+          time_zone: UTC
+    entity-scan:
+      packages:
+        - com.brightpath.coremock.domain
+brightpath:
+  coremock:
+    vendor-api-key: ${VENDOR_API_KEY:brightpath_vendor_api_dev_key}
+    scope-token-secret: ${SCOPE_TOKEN_SECRET:brightpath_scope_token_dev_secret}
+    webhook-secret: ${WEBHOOK_SECRET:brightpath_webhook_dev_secret}

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Your profile','', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">Account</div>
+            <h1>Your profile</h1>
+            <p class="sub" th:text="|Signed in as ${principal.username()} · ${principal.role()}|">meta</p>
+        </div>
+    </div>
+
+    <div class="two-col">
+        <section class="card">
+            <div class="card-head"><h2>Profile details</h2></div>
+            <form th:action="@{/profile}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <div class="field">
+                    <label for="displayName">Full name</label>
+                    <input class="input" type="text" id="displayName" name="displayName" required maxlength="120"
+                           th:value="${profileUser != null ? profileUser.getDisplayName() : principal.displayName()}">
+                </div>
+                <div class="field">
+                    <label for="email">Email</label>
+                    <input class="input" type="email" id="email" name="email" required
+                           th:value="${profileUser != null ? profileUser.getEmail() : principal.email()}">
+                </div>
+                <div class="field">
+                    <label for="timezone">Timezone</label>
+                    <select class="select" id="timezone" name="timezone">
+                        <option value="UTC" th:selected="${profileUser == null or profileUser.getTimezone() == 'UTC'}">UTC</option>
+                        <option value="Europe/London" th:selected="${profileUser != null and profileUser.getTimezone() == 'Europe/London'}">Europe/London</option>
+                        <option value="Europe/Berlin" th:selected="${profileUser != null and profileUser.getTimezone() == 'Europe/Berlin'}">Europe/Berlin</option>
+                        <option value="America/New_York" th:selected="${profileUser != null and profileUser.getTimezone() == 'America/New_York'}">America/New_York</option>
+                        <option value="America/Los_Angeles" th:selected="${profileUser != null and profileUser.getTimezone() == 'America/Los_Angeles'}">America/Los_Angeles</option>
+                        <option value="Asia/Tokyo" th:selected="${profileUser != null and profileUser.getTimezone() == 'Asia/Tokyo'}">Asia/Tokyo</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="bio">Short bio</label>
+                    <textarea class="textarea" id="bio" name="bio" maxlength="1000"
+                              th:text="${profileUser != null ? profileUser.getBio() : ''}"></textarea>
+                </div>
+                <div class="field">
+                    <label for="avatarUrl">Profile picture URL (optional)</label>
+                    <input class="input" type="url" id="avatarUrl" name="avatarUrl" placeholder="https://example.com/me.jpg">
+                    <div class="hint">We'll import it as your profile picture instead of you uploading a file.</div>
+                </div>
+                <button class="btn btn-primary" type="submit">Save profile</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="card-head"><h2>Change password</h2></div>
+            <form th:action="@{/profile/password}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <div class="field">
+                    <label for="currentPassword">Current password</label>
+                    <input class="input" type="password" id="currentPassword" name="currentPassword" required autocomplete="current-password">
+                </div>
+                <div class="field">
+                    <label for="newPassword">New password</label>
+                    <input class="input" type="password" id="newPassword" name="newPassword" required autocomplete="new-password"
+                           minlength="10" title="At least 10 characters with uppercase, lowercase and a digit">
+                    <div class="hint">At least 10 characters, including uppercase, lowercase and a digit.</div>
+                </div>
+                <div class="field">
+                    <label for="confirmPassword">Confirm new password</label>
+                    <input class="input" type="password" id="confirmPassword" name="confirmPassword" required autocomplete="new-password">
+                </div>
+                <button class="btn btn-secondary" type="submit">Change password</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="card-head"><h2>Change email (with verification)</h2></div>
+            <p class="cell-sub">Request a verification code, then confirm to switch your account email.</p>
+            <form th:action="@{/profile/email/change-request}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <div class="field">
+                    <label for="newEmailRequest">New email</label>
+                    <input class="input" type="email" id="newEmailRequest" name="newEmail" required>
+                </div>
+                <button class="btn btn-secondary" type="submit">Send verification code</button>
+            </form>
+            <hr class="section-rule">
+            <form th:action="@{/profile/email/change-confirm}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <div class="field">
+                    <label for="newEmailConfirm">New email</label>
+                    <input class="input" type="email" id="newEmailConfirm" name="newEmail" required>
+                </div>
+                <div class="field">
+                    <label for="code">Verification code</label>
+                    <input class="input" type="text" id="code" name="code" required maxlength="6">
+                </div>
+                <button class="btn btn-primary" type="submit">Confirm email change</button>
+            </form>
+        </section>
+    </div>
+</main>
+</body>
+</html>

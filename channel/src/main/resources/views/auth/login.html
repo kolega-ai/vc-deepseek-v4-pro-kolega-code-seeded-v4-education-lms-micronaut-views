@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|Sign in · ${orgName}|">Sign in</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/app.css(v=${assetVersion})}">
+</head>
+<body>
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="brand-row">
+            <span class="brand-mark">B</span>
+            <span>
+                <span class="brand-name" style="font-family: var(--font-display); font-size: 1.15rem; color: var(--ink-900);">Brightpath</span>
+                <span class="brand-sub" th:text="${orgName}" style="display:block; font-size:0.72rem; color: var(--ink-500);">Brightpath Academy</span>
+            </span>
+        </div>
+        <h1>Sign in</h1>
+        <p class="auth-sub">Welcome back. Sign in to continue to your courses.</p>
+
+        <div class="flash flash-success" th:if="${justLoggedOut}">✓ You have been signed out.</div>
+        <div class="flash flash-error" th:if="${flash != null}" th:classappend="${flashType == 'error'} ? 'flash-error' : 'flash-success'">
+            <span th:text="${flashType == 'error'} ? '⚠️' : '✓'">⚠️</span>
+            <span th:text="${flash}">Message</span>
+        </div>
+        <div class="flash flash-error" th:if="${error}">
+            <span>⚠️</span><span th:text="${errorMessage}">Invalid username or password.</span>
+        </div>
+
+        <form th:action="@{/login}" method="post">
+            <input type="hidden" name="_csrf" th:value="${csrf}">
+            <div class="field">
+                <label for="username">Username or email</label>
+                <input class="input" type="text" id="username" name="username" autocomplete="username"
+                       required autofocus placeholder="e.g. alex.rivera">
+            </div>
+            <div class="field">
+                <label for="password">Password</label>
+                <input class="input" type="password" id="password" name="password" autocomplete="current-password" required>
+            </div>
+            <button class="btn btn-primary btn-block btn-lg" type="submit">Sign in</button>
+        </form>
+
+        <div class="auth-foot">
+            <a th:href="@{/password/forgot}">Forgot your password?</a>
+            <span aria-hidden="true"> · </span>
+            <a th:href="@{/register}">Create an account</a>
+        </div>
+
+        <hr class="section-rule">
+        <p class="auth-sub">Prefer not to type your password? We'll email you a one-time sign-in link instead.</p>
+        <form th:action="@{/auth/magic-link/request}" method="post">
+            <input type="hidden" name="_csrf" th:value="${csrf}">
+            <div class="field">
+                <label for="magicEmail">Email</label>
+                <input class="input" type="email" id="magicEmail" name="email" required autocomplete="email" placeholder="you@example.com">
+            </div>
+            <button class="btn btn-secondary btn-block" type="submit">Email me a sign-in link</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

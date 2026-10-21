@@ -1,0 +1,123 @@
+micronaut:
+  application:
+    name: brightpath-channel
+  server:
+    port: ${CHANNEL_PORT:8080}
+    max-request-size: 25MB
+    multipart:
+      max-file-size: 25MB
+  router:
+    static-resources:
+      default:
+        enabled: true
+        mapping: /**
+        paths: classpath:public
+  views:
+    thymeleaf:
+      enabled: true
+  security:
+    enabled: true
+    authentication: session
+    endpoints:
+      login:
+        enabled: false
+      logout:
+        enabled: false
+    redirect:
+      unauthorized:
+        enabled: true
+        url: /login
+      forbidden:
+        enabled: true
+        url: /403
+    intercept-url-map:
+      - pattern: /css/**
+        access: isAnonymous()
+      - pattern: /js/**
+        access: isAnonymous()
+      - pattern: /images/**
+        access: isAnonymous()
+      - pattern: /favicon.ico
+        access: isAnonymous()
+      - pattern: /login
+        access: isAnonymous()
+      - pattern: /register
+        access: isAnonymous()
+      - pattern: /password/**
+        access: isAnonymous()
+      - pattern: /health
+        access: isAnonymous()
+      - pattern: /error
+        access: isAnonymous()
+      - pattern: /403
+        access: isAnonymous()
+      - pattern: /404
+        access: isAnonymous()
+  session:
+    http:
+      cookie: true
+      cookie-name: BRIGHTPATH_SESSION
+      cookie-same-site: Lax
+      cookie-http-only: true
+      cookie-path: /
+    max-age: 8h
+  http:
+    client:
+      read-timeout: 10s
+  management:
+    endpoints:
+      health:
+        enabled: true
+endpoints:
+  env:
+    enabled: true
+    sensitive: false
+  beans:
+    enabled: true
+    sensitive: false
+datasources:
+  default:
+    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:5432/channel_db}
+    username: ${DATASOURCE_USERNAME:brightpath}
+    password: ${DATASOURCE_PASSWORD:brightpath_dev_password}
+    driver-class-name: org.postgresql.Driver
+    db-type: postgres
+flyway:
+  datasources:
+    default:
+      enabled: true
+jpa:
+  default:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        hbm2ddl:
+          auto: none
+        jdbc:
+          time_zone: UTC
+    entity-scan:
+      packages:
+        - com.brightpath.channel.domain
+    packages-to-scan:
+      - com.brightpath.channel.domain
+brightpath:
+  decision:
+    base-url: ${DECISION_BASE_URL:http://localhost:8081}
+    internal-secret: ${DECISION_INTERNAL_SECRET:brightpath_internal_dev_secret}
+  coremock:
+    base-url: ${COREMOCK_BASE_URL:http://localhost:8082}
+    vendor-api-key: ${VENDOR_API_KEY:brightpath_vendor_api_dev_key}
+    webhook-url: ${COREMOCK_BASE_URL:http://localhost:8082}/v1/hooks
+    webhook-secret: ${WEBHOOK_SECRET:brightpath_webhook_dev_secret}
+  upload-dir: ${UPLOAD_DIR:./data/uploads}
+  material-dir: ${MATERIAL_DIR:./data/materials}
+  directory:
+    url: ${DIRECTORY_URL:ldap://localhost:389}
+    base-dn: ${DIRECTORY_BASE_DN:ou=people,dc=brightpath,dc=example}
+  report-code:
+    phrase: ${REPORT_CODE_PHRASE:brightpath-report-code-v1}
+  assistant:
+    base-url: ${ASSISTANT_BASE_URL:http://localhost:11434/v1/chat/completions}
+    key: ${ASSISTANT_KEY:local-assistant-key}
+  seed:
+    enabled: ${SEED_ENABLED:true}

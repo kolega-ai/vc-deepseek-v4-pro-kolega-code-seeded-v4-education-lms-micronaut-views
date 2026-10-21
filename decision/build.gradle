@@ -1,0 +1,46 @@
+plugins {
+    id 'io.micronaut.application' version '4.5.4'
+    id 'com.gradleup.shadow' version '8.3.5'
+}
+
+micronaut {
+    version = '4.8.3'
+    runtime = 'netty'
+    testRuntime = 'JUNIT_5'
+    processing {
+        incremental = true
+        annotations = ['com.brightpath.*']
+    }
+}
+
+application {
+    mainClass = 'com.brightpath.decision.Application'
+}
+
+dependencies {
+    annotationProcessor 'io.micronaut.validation:micronaut-validation-processor'
+
+    implementation 'io.micronaut:micronaut-http-server-netty'
+    implementation 'io.micronaut.serde:micronaut-serde-jackson'
+    implementation 'io.micronaut.data:micronaut-data-hibernate-jpa'
+    implementation 'io.micronaut.sql:micronaut-hibernate-jpa:6.3.4'
+    implementation 'io.micronaut.sql:micronaut-jdbc-hikari:6.3.4'
+    implementation 'io.micronaut.flyway:micronaut-flyway'
+    implementation 'org.flywaydb:flyway-core:10.20.0'
+    implementation 'org.flywaydb:flyway-database-postgresql:10.20.0'
+    implementation 'io.micronaut.validation:micronaut-validation'
+    implementation 'io.micronaut:micronaut-management'
+    implementation 'io.projectreactor:reactor-core'
+
+    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'org.yaml:snakeyaml'
+    runtimeOnly 'ch.qos.logback:logback-classic:1.5.18'
+
+    testImplementation 'io.micronaut.test:micronaut-test-junit5'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+}
+
+tasks.named('shadowJar') {
+    mergeServiceFiles()
+}

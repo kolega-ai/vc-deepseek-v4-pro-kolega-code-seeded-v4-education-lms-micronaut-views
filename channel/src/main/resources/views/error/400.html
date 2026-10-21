@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|Request problem · ${orgName}|">Request problem</title>
+    <link rel="stylesheet" th:href="@{/css/app.css(v=${assetVersion})}">
+</head>
+<body>
+<div class="error-page">
+    <div class="code" th:text="${errorStatus != null ? errorStatus : '400'}">400</div>
+    <h1>That request could not be processed</h1>
+    <p class="msg" th:if="${showMessage}" th:text="${errorMessage}">Please review your input and try again.</p>
+    <p class="msg" th:unless="${showMessage}">Please review your input and try again.</p>
+    <p><a class="btn btn-primary" th:href="@{/dashboard}">Go to my dashboard</a></p>
+</div>
+</body>
+</html>

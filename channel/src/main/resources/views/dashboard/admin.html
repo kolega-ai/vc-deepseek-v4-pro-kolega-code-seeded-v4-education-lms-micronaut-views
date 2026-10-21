@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Administration','admin', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">School administration</div>
+            <h1 th:text="|${orgName} overview|">Administration</h1>
+            <p class="sub">Users, courses, enrollments and the organization-wide activity feed.</p>
+        </div>
+        <div class="pill-row">
+            <a class="btn btn-primary" th:href="@{/admin/import}">Import data</a>
+            <a class="btn btn-secondary" th:href="@{/admin/export}">Run an export</a>
+        </div>
+    </div>
+
+    <div class="grid grid-4">
+        <div class="stat stat-accent">
+            <div class="stat-label">Total users</div>
+            <div class="stat-value" th:text="${totalUsers}">0</div>
+            <div class="stat-sub" th:text="|${usersByRole.get('STUDENT')} students · ${usersByRole.get('INSTRUCTOR')} instructors|">breakdown</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Active courses</div>
+            <div class="stat-value" th:text="${activeCourses}">0</div>
+        </div>
+        <div class="stat stat-amber">
+            <div class="stat-label">Open cohorts</div>
+            <div class="stat-value" th:text="${activeCohorts}">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Pending enrollments</div>
+            <div class="stat-value" th:text="${pendingEnrollments}">0</div>
+            <div class="stat-sub"><a th:href="@{/admin/enrollments(status='pending')}">Review queue →</a></div>
+        </div>
+    </div>
+
+    <div class="grid grid-main">
+        <section class="card">
+            <div class="card-head">
+                <h2>Recent activity (audit log)</h2>
+                <a th:href="@{/admin/audit}">View full log →</a>
+            </div>
+            <div class="empty" th:if="${recentAudit.isEmpty()}">
+                <span class="empty-ico" aria-hidden="true">🧾</span>
+                <h3>No activity recorded yet</h3>
+            </div>
+            <div class="table-wrap" th:unless="${recentAudit.isEmpty()}">
+                <table class="data">
+                    <thead>
+                    <tr><th>When</th><th>Actor</th><th>Action</th><th>Resource</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="event : ${recentAudit}">
+                        <td class="cell-sub" th:text="${#temporals.format(event.getCreatedAt(), 'MMM d, HH:mm')}">time</td>
+                        <td th:text="${event.getActorUsername() != null ? event.getActorUsername() : 'system'}">actor</td>
+                        <td><span class="badge badge-neutral" th:text="${event.getAction()}">action</span></td>
+                        <td th:text="|${event.getResourceType()} ${event.getResourceId() != null ? '#' + event.getResourceId() : ''}|">resource</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div>
+            <section class="card">
+                <div class="card-head"><h2>Role distribution</h2></div>
+                <div style="display:flex; justify-content:space-between; padding: 0.4rem 0; font-size: 0.9rem;">
+                    <span>Students</span><strong th:text="${usersByRole.get('STUDENT')}">0</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding: 0.4rem 0; font-size: 0.9rem;">
+                    <span>Instructors</span><strong th:text="${usersByRole.get('INSTRUCTOR')}">0</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding: 0.4rem 0; font-size: 0.9rem;">
+                    <span>Teaching assistants</span><strong th:text="${usersByRole.get('TEACHING_ASSISTANT')}">0</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding: 0.4rem 0; font-size: 0.9rem;">
+                    <span>School admins</span><strong th:text="${usersByRole.get('SCHOOL_ADMIN')}">0</strong>
+                </div>
+            </section>
+            <section class="card">
+                <div class="card-head"><h2>Newest users</h2></div>
+                <div th:each="user : ${recentUsers}" style="display:flex; justify-content:space-between; align-items:center; padding: 0.45rem 0; border-bottom: 1px solid var(--ink-100);">
+                    <div>
+                        <span class="cell-strong" th:text="${user.getDisplayName()}">Name</span>
+                        <div class="cell-sub" th:text="${user.getEmail()}">email</div>
+                    </div>
+                    <span class="badge badge-neutral" th:text="${user.getRole()}">ROLE</span>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+</body>
+</html>

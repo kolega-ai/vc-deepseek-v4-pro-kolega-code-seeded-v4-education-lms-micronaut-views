@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page(${course.getTitle()},'admin-courses', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/admin/courses}">Courses</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span th:text="${course.getCode()}">CODE</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker" th:text="|${course.getCode()} · ${course.getCategory()} · ${course.getLevel()}|">meta</div>
+            <h1 th:text="${course.getTitle()}">Course</h1>
+            <p class="sub" th:text="${course.getSubtitle()}">subtitle</p>
+        </div>
+        <div class="pill-row">
+            <a class="btn btn-secondary" th:href="@{/admin/courses/{id}(id=${course.getId()})}">Public view</a>
+            <form class="inline-form" method="post" th:if="${course.getStatus() == 'active'}"
+                  th:action="@{/admin/courses/{id}/status(id=${course.getId()}, target='archived')}"
+                  th:attr="data-confirm='Archive this course?'">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <button class="btn btn-ghost" type="submit">Archive course</button>
+            </form>
+            <form class="inline-form" method="post" th:if="${course.getStatus() == 'archived'}"
+                  th:action="@{/admin/courses/{id}/status(id=${course.getId()}, target='active')}">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <button class="btn btn-secondary" type="submit">Reactivate course</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <a th:href="@{/admin/courses/{id}/edit(id=${course.getId()})}">Details</a>
+        <span class="tab active">Content</span>
+    </div>
+
+    <div class="grid grid-main">
+        <section class="card">
+            <div class="card-head"><h2>Modules &amp; lessons</h2></div>
+            <div class="empty" th:if="${modules.isEmpty()}">
+                <span class="empty-ico" aria-hidden="true">📖</span>
+                <h3>No modules yet</h3>
+                <p>Add the first module to structure this course.</p>
+            </div>
+            <div th:each="module : ${modules}" style="margin-bottom: 0.9rem;">
+                <details class="module">
+                    <summary th:text="|Module ${module.getPosition()}: ${module.getTitle()}|">Module</summary>
+                    <div class="module-body">
+                        <p class="cell-sub" th:text="${module.getDescription()}">description</p>
+                        <form method="post" th:action="@{/admin/courses/{id}/modules/{mid}/lessons(id=${course.getId()}, mid=${module.getId()})}"
+                              style="background: var(--paper-2); border-radius: 8px; padding: 0.8rem; margin: 0.6rem 0;">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <div class="field-row">
+                                <div class="field" style="margin: 0;">
+                                    <label for="title">Lesson title</label>
+                                    <input class="input" type="text" name="title" required maxlength="200">
+                                </div>
+                                <div class="field" style="margin: 0;">
+                                    <label for="contentType">Type</label>
+                                    <select class="select" name="contentType">
+                                        <option value="text">Text</option>
+                                        <option value="markdown">Markdown</option>
+                                        <option value="video">Video link</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="field" style="margin: 0.6rem 0;">
+                                <label for="content">Content</label>
+                                <textarea class="textarea" name="content" style="min-height: 60px;"></textarea>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" type="submit">Add lesson</button>
+                        </form>
+                        <form class="inline-form" method="post"
+                              th:action="@{/admin/courses/{id}/modules/{mid}/remove(id=${course.getId()}, mid=${module.getId()})}"
+                              th:attr="data-confirm='Remove this module and its lessons?'">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button class="btn btn-danger btn-sm" type="submit">Remove module</button>
+                        </form>
+                    </div>
+                </details>
+            </div>
+            <form th:action="@{/admin/courses/{id}/modules(id=${course.getId()})}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <div class="field">
+                    <label for="moduleTitle">Add a module</label>
+                    <input class="input" type="text" id="moduleTitle" name="title" required maxlength="200" placeholder="e.g. Module 4: Data structures">
+                </div>
+                <div class="field">
+                    <label for="moduleDescription">Description</label>
+                    <input class="input" type="text" id="moduleDescription" name="description" maxlength="1000">
+                </div>
+                <button class="btn btn-primary" type="submit">Add module</button>
+            </form>
+        </section>
+
+        <div>
+            <section class="card">
+                <div class="card-head"><h2>Resources</h2></div>
+                <div class="empty" th:if="${resources.isEmpty()}">
+                    <span class="empty-ico" aria-hidden="true">📎</span>
+                    <h3>No resources yet</h3>
+                </div>
+                <div th:each="resource : ${resources}" style="display: flex; justify-content: space-between; padding: 0.45rem 0; border-bottom: 1px solid var(--ink-100);">
+                    <span>
+                        <span class="cell-strong" th:text="${resource.getTitle()}">Resource</span>
+                        <span class="cell-sub" th:if="${resource.getFileId() != null}">uploaded file</span>
+                        <a class="cell-sub" th:if="${resource.getExternalUrl() != null}" th:href="${resource.getExternalUrl()}" rel="noopener noreferrer" target="_blank">external link ↗</a>
+                    </span>
+                    <form class="inline-form" method="post"
+                          th:action="@{/admin/courses/{id}/resources/{rid}/remove(id=${course.getId()}, rid=${resource.getId()})}"
+                          th:attr="data-confirm='Remove this resource?'">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button class="btn btn-ghost btn-sm" type="submit" aria-label="Remove resource">✕</button>
+                    </form>
+                </div>
+                <form th:action="@{/admin/courses/{id}/resources/link(id=${course.getId()})}" method="post" style="margin-top: 0.7rem;">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <div class="field">
+                        <label for="resourceTitle">Title</label>
+                        <input class="input" type="text" id="resourceTitle" name="title" required maxlength="200">
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label for="kind">Kind</label>
+                            <select class="select" id="kind" name="kind">
+                                <option value="reading">Reading</option>
+                                <option value="slides">Slides</option>
+                                <option value="syllabus">Syllabus</option>
+                                <option value="link">Link</option>
+                                <option value="video_link">Video link</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="externalUrl">URL</label>
+                            <input class="input" type="url" id="externalUrl" name="externalUrl">
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" type="submit">Add link resource</button>
+                </form>
+                <hr class="section-rule">
+                <form th:action="@{/admin/courses/{id}/resources/file(id=${course.getId()}, _csrf=${csrf})}" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <div class="field">
+                        <label for="fileTitle">Upload a document (pdf, docx, xlsx, pptx, zip, …)</label>
+                        <input class="input" type="text" id="fileTitle" name="title" required maxlength="200" placeholder="Resource title">
+                    </div>
+                    <div class="field">
+                        <label for="file">File</label>
+                        <input class="input" type="file" id="file" name="file" required>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Upload resource</button>
+                </form>
+                <hr class="section-rule">
+                <form th:action="@{/admin/courses/{id}/cvr-img(id=${course.getId()}, _csrf=${csrf})}" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <div class="field">
+                        <label for="cvrImgFile">Catalog cover image</label>
+                        <input class="input" type="file" id="cvrImgFile" name="file" required accept="image/*">
+                    </div>
+                    <button class="btn btn-secondary" type="submit">Update cover image</button>
+                </form>
+            </section>
+        </div>
+    </div>
+</main>
+</body>
+</html>

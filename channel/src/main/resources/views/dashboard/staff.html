@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Teaching home','dashboard', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker" th:text="${principal.isTeachingAssistant()} ? 'Teaching assistant workspace' : 'Instructor workspace'">Instructor workspace</div>
+            <h1 th:text="|Welcome back, ${principal.displayName()}|">Welcome back</h1>
+            <p class="sub" th:text="${principal.isTeachingAssistant()}
+                ? 'Review submissions and add draft feedback for the courses assigned to you.'
+                : 'Manage your courses, publish assignments and grade student work.'">Overview</p>
+        </div>
+    </div>
+
+    <div class="grid grid-4">
+        <div class="stat stat-accent">
+            <div class="stat-label">Assigned courses</div>
+            <div class="stat-value" th:text="${#lists.size(cards)}">0</div>
+        </div>
+        <div class="stat stat-amber">
+            <div class="stat-label">Waiting for grading</div>
+            <div class="stat-value" th:text="${needingGrading}">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Pending enrollment requests</div>
+            <div class="stat-value" th:text="${pendingEnrollments}">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Assignments due within 3 days</div>
+            <div class="stat-value" th:text="${dueSoon}">0</div>
+        </div>
+    </div>
+
+    <section class="card" th:if="${!cards.isEmpty()}">
+        <div class="card-head"><h2>My courses</h2></div>
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                <tr>
+                    <th>Course</th>
+                    <th class="num">Cohorts</th>
+                    <th class="num">Draft assignments</th>
+                    <th class="num">Published</th>
+                    <th class="num">Needs grading</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="card : ${cards}">
+                    <td>
+                        <span class="cell-strong" th:text="${card.course().getTitle()}">Course</span>
+                        <div class="cell-sub" th:text="${card.course().getCode()}">CS-101</div>
+                    </td>
+                    <td class="num" th:text="${card.cohorts()}">0</td>
+                    <td class="num" th:text="${card.drafts()}">0</td>
+                    <td class="num" th:text="${card.published()}">0</td>
+                    <td class="num">
+                        <span class="badge badge-amber" th:if="${card.needingGrading() > 0}" th:text="${card.needingGrading()}">0</span>
+                        <span th:unless="${card.needingGrading() > 0}">—</span>
+                    </td>
+                    <td>
+                        <div class="row-actions">
+                            <a class="btn btn-secondary btn-sm" th:href="@{/courses/{id}(id=${card.course().getId()})}">Open course</a>
+                            <a class="btn btn-primary btn-sm" th:if="${principal.canPublishOrRelease(card.course().getId())}"
+                               th:href="@{/assignments/new(courseId=${card.course().getId()})}">New assignment</a>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="empty" th:if="${cards.isEmpty()}">
+        <span class="empty-ico" aria-hidden="true">🗂️</span>
+        <h3>No courses assigned yet</h3>
+        <p>Ask a school administrator to assign you to a cohort as instructor or assistant.</p>
+    </div>
+
+    <div class="grid grid-main">
+        <section class="card">
+            <div class="card-head">
+                <h2>Recent submissions</h2>
+            </div>
+            <div class="empty" th:if="${queuePreview.isEmpty()}">
+                <span class="empty-ico" aria-hidden="true">📥</span>
+                <h3>No submissions yet</h3>
+                <p>Submissions appear here as students hand in their work.</p>
+            </div>
+            <div class="table-wrap" th:unless="${queuePreview.isEmpty()}">
+                <table class="data">
+                    <thead>
+                    <tr><th>Student</th><th>Assignment</th><th>Status</th><th>Submitted</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${queuePreview}">
+                        <td class="cell-strong" th:text="${row.get('studentName')}">Student</td>
+                        <td th:text="${row.get('assignmentTitle')}">Assignment</td>
+                        <td>
+                            <span class="badge badge-warning" th:if="${row.get('status') == 'submitted' or row.get('status') == 'late'}"><span class="dot"></span><span th:text="${row.get('status')}">submitted</span></span>
+                            <span class="badge badge-info" th:if="${row.get('status') == 'graded'}"><span class="dot"></span>draft graded</span>
+                            <span class="badge badge-success" th:if="${row.get('status') == 'released'}"><span class="dot"></span>released</span>
+                            <span class="badge badge-danger" th:if="${row.get('status') == 'needs_resubmission'}"><span class="dot"></span>resubmission requested</span>
+                        </td>
+                        <td class="cell-sub" th:text="${row.get('submittedAt') != null ? #temporals.format(row.get('submittedAt'), 'MMM d, HH:mm') : '—'}">date</td>
+                        <td>
+                            <a class="btn btn-secondary btn-sm" th:href="@{/submissions/{id}/grade(id=${row.get('id')})}">Grade</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-head"><h2>Quick links</h2></div>
+            <ul class="timeline">
+                <li>
+                    <div class="t-body">
+                        <a th:href="@{/courses}">Browse all courses</a>
+                        <div class="cell-sub">Catalog, cohorts and rosters</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="t-body">
+                        <a th:href="@{/notifications}">Notifications</a>
+                        <div class="cell-sub">Enrollment requests and submission updates</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="t-body">
+                        <a th:href="@{/profile}">Your profile</a>
+                        <div class="cell-sub">Update your name, email and password</div>
+                    </div>
+                </li>
+            </ul>
+        </section>
+    </div>
+</main>
+</body>
+</html>

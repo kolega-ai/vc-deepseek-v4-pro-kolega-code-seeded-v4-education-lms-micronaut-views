@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page(${course == null ? 'New course' : 'Edit: ' + course.getTitle()},'admin-courses', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/admin/courses}">Courses</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span th:text="${course == null ? 'New course' : 'Edit'}">Edit</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker">Administration</div>
+            <h1 th:text="${course == null ? 'New course' : 'Edit: ' + course.getTitle()}">New course</h1>
+        </div>
+    </div>
+
+    <form class="form-card wide"
+          th:action="@{${course == null ? '/admin/courses' : '/admin/courses/' + course.getId() + '/edit'}}"
+          method="post">
+        <input type="hidden" name="_csrf" th:value="${csrf}">
+        <div class="field-row">
+            <div class="field">
+                <label for="code">Course code</label>
+                <input class="input" type="text" id="code" name="code" required maxlength="24"
+                       pattern="[A-Za-z0-9-]+" th:value="${course != null ? course.getCode() : ''}"
+                       th:readonly="${course != null}" placeholder="e.g. CS-101">
+                <div class="hint" th:if="${course != null}">Course codes cannot be changed after creation.</div>
+            </div>
+            <div class="field">
+                <label for="title">Title</label>
+                <input class="input" type="text" id="title" name="title" required maxlength="200"
+                       th:value="${course != null ? course.getTitle() : ''}" placeholder="e.g. Introduction to Programming">
+            </div>
+        </div>
+        <div class="field">
+            <label for="subtitle">Subtitle</label>
+            <input class="input" type="text" id="subtitle" name="subtitle" maxlength="200"
+                   th:value="${course != null ? course.getSubtitle() : ''}">
+        </div>
+        <div class="field">
+            <label for="description">Description</label>
+            <textarea class="textarea" id="description" name="description" th:text="${course != null ? course.getDescription() : ''}"></textarea>
+        </div>
+        <div class="field">
+            <label for="syllabus">Syllabus</label>
+            <textarea class="textarea" id="syllabus" name="syllabus" th:text="${course != null ? course.getSyllabus() : ''}"></textarea>
+        </div>
+        <div class="field-row-3">
+            <div class="field">
+                <label for="category">Category</label>
+                <select class="select" id="category" name="category">
+                    <option th:each="c : ${categories}" th:value="${c}" th:text="${c}"
+                            th:selected="${course != null and c == course.getCategory()}">Category</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="level">Level</label>
+                <select class="select" id="level" name="level">
+                    <option th:each="l : ${levels}" th:value="${l}" th:text="${l}"
+                            th:selected="${course != null and l == course.getLevel()}">Level</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="coverColor">Card color</label>
+                <select class="select" id="coverColor" name="coverColor">
+                    <option value="indigo" th:selected="${course != null and course.getCoverColor() == 'indigo'}">Indigo</option>
+                    <option value="teal" th:selected="${course != null and course.getCoverColor() == 'teal'}">Teal</option>
+                    <option value="amber" th:selected="${course != null and course.getCoverColor() == 'amber'}">Amber</option>
+                    <option value="rose" th:selected="${course != null and course.getCoverColor() == 'rose'}">Rose</option>
+                    <option value="slate" th:selected="${course != null and course.getCoverColor() == 'slate'}">Slate</option>
+                    <option value="olive" th:selected="${course != null and course.getCoverColor() == 'olive'}">Olive</option>
+                    <option value="plum" th:selected="${course != null and course.getCoverColor() == 'plum'}">Plum</option>
+                    <option value="ocean" th:selected="${course != null and course.getCoverColor() == 'ocean'}">Ocean</option>
+                </select>
+            </div>
+        </div>
+        <div class="checkbox-row" th:if="${course != null}">
+            <input type="checkbox" id="enrollmentOpen" name="enrollmentOpen" value="true" th:checked="${course.isEnrollmentOpen()}">
+            <label for="enrollmentOpen" style="margin: 0;">Enrollment is open</label>
+        </div>
+        <div class="form-actions">
+            <a class="btn btn-ghost" th:href="@{/admin/courses}">Cancel</a>
+            <button class="btn btn-primary" type="submit" th:text="${course == null ? 'Create course' : 'Save changes'}">Save</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

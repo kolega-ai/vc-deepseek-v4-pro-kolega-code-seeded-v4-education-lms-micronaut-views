@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Cohorts','cohorts', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">Administration</div>
+            <h1>Cohorts</h1>
+            <p class="sub">Scheduled course runs with rosters, instructors and enrollment.</p>
+        </div>
+        <a class="btn btn-primary" th:href="@{/admin/cohorts/new}">Create cohort</a>
+    </div>
+
+    <div class="filter-bar">
+        <form th:action="@{/admin/cohorts}" method="get">
+            <input class="input grow" type="search" name="q" th:value="${q}" placeholder="Search cohorts…" aria-label="Search cohorts">
+            <select class="select" name="status" aria-label="Filter by status">
+                <option value="">All statuses</option>
+                <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}" th:selected="${s == status}">status</option>
+            </select>
+            <button class="btn btn-primary" type="submit">Search</button>
+        </form>
+    </div>
+
+    <div class="empty" th:if="${cohorts.isEmpty()}">
+        <span class="empty-ico" aria-hidden="true">🗓️</span>
+        <h3>No cohorts match</h3>
+    </div>
+
+    <div class="table-wrap" th:unless="${cohorts.isEmpty()}">
+        <table class="data">
+            <thead>
+            <tr><th>Cohort</th><th>Course</th><th>Schedule</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="cohort : ${cohorts}">
+                <td>
+                    <a class="cell-strong" th:href="@{/cohorts/{id}(id=${cohort.getId()})}" th:text="${cohort.getName()}">Cohort</a>
+                    <div class="cell-sub" th:text="|capacity ${cohort.getMaxStudents()}|">capacity</div>
+                </td>
+                <td th:text="${courses.get(cohort.getCourseId()) != null ? courses.get(cohort.getCourseId()).getTitle() : ''}">Course</td>
+                <td class="cell-sub" th:text="|${#temporals.format(cohort.getStartDate(), 'MMM d, yyyy')} → ${#temporals.format(cohort.getEndDate(), 'MMM d, yyyy')}|">dates</td>
+                <td>
+                    <span class="badge badge-primary" th:if="${cohort.getStatus() == 'upcoming'}"><span class="dot"></span>Upcoming</span>
+                    <span class="badge badge-success" th:if="${cohort.getStatus() == 'active'}"><span class="dot"></span>Active</span>
+                    <span class="badge badge-info" th:if="${cohort.getStatus() == 'completed'}"><span class="dot"></span>Completed</span>
+                    <span class="badge badge-neutral" th:if="${cohort.getStatus() == 'cancelled'}"><span class="dot"></span>Cancelled</span>
+                </td>
+                <td>
+                    <div class="row-actions">
+                        <a class="btn btn-secondary btn-sm" th:href="@{/cohorts/{id}(id=${cohort.getId()})}">Open</a>
+                        <a class="btn btn-ghost btn-sm" th:href="@{/admin/cohorts/{id}/edit(id=${cohort.getId()})}">Edit</a>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="pagination" th:if="${totalPages > 1}" aria-label="Cohort pages">
+        <a th:href="@{/admin/cohorts(page=${page - 1}, q=${q}, status=${status})}" th:if="${page > 0}" rel="prev">‹ Prev</a>
+        <span class="disabled" th:if="${page <= 0}">‹ Prev</span>
+        <span class="current" th:text="|Page ${page + 1} of ${totalPages}|">Page 1</span>
+        <a th:href="@{/admin/cohorts(page=${page + 1}, q=${q}, status=${status})}" th:if="${page < totalPages - 1}" rel="next">Next ›</a>
+        <span class="disabled" th:if="${page >= totalPages - 1}">Next ›</span>
+    </nav>
+</main>
+</body>
+</html>

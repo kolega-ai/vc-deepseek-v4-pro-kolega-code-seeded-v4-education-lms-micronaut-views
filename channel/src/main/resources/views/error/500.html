@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|Something went wrong · ${orgName}|">Something went wrong</title>
+    <link rel="stylesheet" th:href="@{/css/app.css(v=${assetVersion})}">
+</head>
+<body>
+<div class="error-page">
+    <div class="code" th:text="${errorStatus != null ? errorStatus : '500'}">500</div>
+    <h1>Something went wrong</h1>
+    <p class="msg" th:if="${showMessage}" th:text="${errorMessage}">An unexpected error occurred.</p>
+    <p class="msg" th:unless="${showMessage}">An unexpected error occurred. Please try again, and contact support if the problem persists.</p>
+    <p><a class="btn btn-primary" th:href="@{/dashboard}">Go to my dashboard</a></p>
+</div>
+</body>
+</html>

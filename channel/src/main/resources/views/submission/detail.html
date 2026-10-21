@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page(${assignment.getTitle()},'courses', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/courses/{id}(id=${course.getId()})}" th:text="${course.getTitle()}">Course</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <a th:href="@{/assignments/{id}(id=${assignment.getId()})}" th:text="${assignment.getTitle()}">Assignment</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span>Submission</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker" th:text="${course.getCode()}">course</div>
+            <h1 th:text="|Submission — ${student != null ? student.getDisplayName() : 'student'}|">Submission</h1>
+            <p class="sub" th:text="${assignment.getTitle()}">assignment</p>
+        </div>
+        <span>
+            <span class="badge badge-warning" th:if="${submission.getStatus() == 'submitted'}"><span class="dot"></span>Submitted</span>
+            <span class="badge badge-danger" th:if="${submission.getStatus() == 'late'}"><span class="dot"></span>Late</span>
+            <span class="badge badge-info" th:if="${submission.getStatus() == 'graded'}"><span class="dot"></span>Draft graded</span>
+            <span class="badge badge-success" th:if="${submission.getStatus() == 'released'}"><span class="dot"></span>Released</span>
+            <span class="badge badge-danger" th:if="${submission.getStatus() == 'needs_resubmission'}"><span class="dot"></span>Resubmission requested</span>
+        </span>
+    </div>
+
+    <div class="grid grid-main">
+        <div>
+            <section class="card">
+                <div class="card-head"><h2>Submitted work</h2></div>
+                <div class="kv-list">
+                    <dt>Submitted</dt>
+                    <dd th:text="${submission.getSubmittedAt() != null ? #temporals.format(submission.getSubmittedAt(), 'EEE, MMM d, yyyy · HH:mm') : '—'}">date</dd>
+                    <dt>Attempt</dt>
+                    <dd th:text="${submission.getAttempt()}">1</dd>
+                    <dt>Due</dt>
+                    <dd th:text="${#temporals.format(assignment.getDueAt(), 'EEE, MMM d, yyyy · HH:mm')}">due</dd>
+                </div>
+                <hr class="section-rule">
+                <h3>Text answer</h3>
+                <p style="white-space: pre-wrap;" th:text="${submission.getTextContent() != null and !submission.getTextContent().isBlank() ? submission.getTextContent() : '(no text submitted)'}">text</p>
+                <h3 th:if="${!files.isEmpty()}">Attachments</h3>
+                <div class="pill-row" th:if="${!files.isEmpty()}">
+                    <span class="file-chip" th:each="file, iter : ${files}">
+                        <a th:href="@{/files/{id}(id=${file.getFileId()})}" th:text="|Attachment ${iter.count}|">Attachment</a>
+                    </span>
+                </div>
+            </section>
+
+            <section class="card" th:if="${staffView}">
+                <div class="card-head">
+                    <h2>Grade history</h2>
+                    <a class="btn btn-primary" th:href="@{/submissions/{id}/grade(id=${submission.getId()})}">Open grading screen</a>
+                </div>
+                <div class="empty" th:if="${history.isEmpty()}">
+                    <span class="empty-ico" aria-hidden="true">📝</span>
+                    <h3>No grade changes yet</h3>
+                </div>
+                <ul class="timeline" th:unless="${history.isEmpty()}">
+                    <li th:each="change : ${history}">
+                        <div class="t-date" th:text="${#temporals.format(change.getCreatedAt(), 'MMM d, yyyy · HH:mm')}">date</div>
+                        <div class="t-body">
+                            <span class="badge badge-primary" th:text="${change.getChangeType()}">type</span>
+                            <span th:if="${change.getNewGrade() != null}" th:text="|grade ${change.getNewGrade()}|">grade</span>
+                            <span th:if="${change.getNewFeedback() != null and !change.getNewFeedback().isBlank()}" class="cell-sub"
+                                  th:text="|feedback: ${change.getNewFeedback()}|">feedback</span>
+                            <span th:if="${change.getNote() != null and !change.getNote().isBlank()}" class="cell-sub"
+                                  th:text="|note: ${change.getNote()}|">note</span>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+        </div>
+
+        <div>
+            <section class="card" th:if="${submission.getReleasedGrade() != null}">
+                <div class="card-head"><h2>Released result</h2></div>
+                <div class="grade-tile">
+                    <div class="g-value" th:text="|${submission.getReleasedGrade()} / ${assignment.getMaxPoints()}|">grade</div>
+                    <div class="g-label">Final grade</div>
+                </div>
+                <h3 style="margin-top: 0.9rem;">Feedback</h3>
+                <p style="white-space: pre-wrap;" th:text="${submission.getReleasedFeedback() != null ? submission.getReleasedFeedback() : '(no written feedback)'}">feedback</p>
+            </section>
+        </div>
+    </div>
+</main>
+</body>
+</html>

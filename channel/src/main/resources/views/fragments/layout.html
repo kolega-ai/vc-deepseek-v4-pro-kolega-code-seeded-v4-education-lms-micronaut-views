@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:fragment="page(title, activeNav, content)">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|${title} · ${orgName}|">Brightpath Academy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/app.css(v=${assetVersion})}">
+</head>
+<body>
+<div class="shell">
+    <aside class="sidebar">
+        <a class="brand" th:href="@{/dashboard}" aria-label="Brightpath home">
+            <span class="brand-mark">B</span>
+            <span>
+                <span class="brand-name">Brightpath</span>
+                <span class="brand-sub" th:text="${orgName}">Brightpath Academy</span>
+            </span>
+        </a>
+        <nav class="nav" aria-label="Main navigation">
+
+            <!-- Student navigation -->
+            <th:block th:if="${principal != null and principal.isStudent()}">
+                <span class="nav-label">Learning</span>
+                <a th:href="@{/dashboard}" th:classappend="${activeNav == 'dashboard'} ? 'active'">
+                    <span class="nav-ico">🏠</span> My dashboard</a>
+                <a th:href="@{/courses}" th:classappend="${activeNav == 'courses'} ? 'active'">
+                    <span class="nav-ico">📚</span> Course catalog</a>
+                <a th:href="@{/notifications}" th:classappend="${activeNav == 'notifications'} ? 'active'">
+                    <span class="nav-ico">🔔</span> Notifications
+                    <span class="count-pill" th:if="${unreadCount != null and unreadCount > 0}" th:text="${unreadCount}">0</span>
+                </a>
+            </th:block>
+
+            <!-- Staff navigation -->
+            <th:block th:if="${principal != null and (principal.isInstructor() or principal.isTeachingAssistant())}">
+                <span class="nav-label">Teaching</span>
+                <a th:href="@{/dashboard}" th:classappend="${activeNav == 'dashboard'} ? 'active'">
+                    <span class="nav-ico">🏠</span> Teaching home</a>
+                <a th:href="@{/courses}" th:classappend="${activeNav == 'courses'} ? 'active'">
+                    <span class="nav-ico">📚</span> Courses</a>
+                <a th:href="@{/notifications}" th:classappend="${activeNav == 'notifications'} ? 'active'">
+                    <span class="nav-ico">🔔</span> Notifications
+                    <span class="count-pill" th:if="${unreadCount != null and unreadCount > 0}" th:text="${unreadCount}">0</span>
+                </a>
+            </th:block>
+
+            <!-- Admin navigation -->
+            <th:block th:if="${principal != null and principal.isAdmin()}">
+                <span class="nav-label">Administration</span>
+                <a th:href="@{/admin}" th:classappend="${activeNav == 'admin'} ? 'active'">
+                    <span class="nav-ico">🏠</span> Overview</a>
+                <a th:href="@{/admin/users}" th:classappend="${activeNav == 'users'} ? 'active'">
+                    <span class="nav-ico">👥</span> Users</a>
+                <a th:href="@{/admin/courses}" th:classappend="${activeNav == 'admin-courses'} ? 'active'">
+                    <span class="nav-ico">📚</span> Courses</a>
+                <a th:href="@{/admin/cohorts}" th:classappend="${activeNav == 'cohorts'} ? 'active'">
+                    <span class="nav-ico">🗓️</span> Cohorts</a>
+                <a th:href="@{/admin/enrollments}" th:classappend="${activeNav == 'enrollments'} ? 'active'">
+                    <span class="nav-ico">📋</span> Enrollments</a>
+                <a th:href="@{/admin/import}" th:classappend="${activeNav == 'import'} ? 'active'">
+                    <span class="nav-ico">📥</span> Import</a>
+                <a th:href="@{/admin/export}" th:classappend="${activeNav == 'export'} ? 'active'">
+                    <span class="nav-ico">📤</span> Export</a>
+                <a th:href="@{/admin/audit}" th:classappend="${activeNav == 'audit'} ? 'active'">
+                    <span class="nav-ico">🧾</span> Audit log</a>
+                <span class="nav-label">Integration &amp; settings</span>
+                <a th:href="@{/admin/api-keys}" th:classappend="${activeNav == 'api-keys'} ? 'active'">
+                    <span class="nav-ico">🔑</span> API keys</a>
+                <a th:href="@{/admin/webhooks}" th:classappend="${activeNav == 'webhooks'} ? 'active'">
+                    <span class="nav-ico">🪝</span> Webhooks</a>
+                <a th:href="@{/admin/settings}" th:classappend="${activeNav == 'settings'} ? 'active'">
+                    <span class="nav-ico">⚙️</span> Settings</a>
+                <a th:href="@{/notifications}" th:classappend="${activeNav == 'notifications'} ? 'active'">
+                    <span class="nav-ico">🔔</span> Notifications
+                    <span class="count-pill" th:if="${unreadCount != null and unreadCount > 0}" th:text="${unreadCount}">0</span>
+                </a>
+            </th:block>
+        </nav>
+        <div class="sidebar-foot" th:if="${principal != null}">
+            <div class="who" th:text="${principal.displayName()}">User</div>
+            <div class="role" th:text="${principal.role()}">Role</div>
+            <form th:action="@{/logout}" method="post" class="inline-form">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <button type="submit" class="btn btn-secondary btn-sm">Sign out</button>
+            </form>
+        </div>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <div class="page-title">
+                <strong th:text="${title}">Page</strong>
+                <span th:text="${orgName}">Brightpath Academy</span>
+            </div>
+            <div class="topbar-spacer"></div>
+            <div class="topbar-actions" th:if="${principal != null}">
+                <a class="icon-btn" th:href="@{/notifications}" aria-label="Notifications">
+                    <span aria-hidden="true">🔔</span>
+                    <span class="bell-dot" th:if="${unreadCount != null and unreadCount > 0}"></span>
+                </a>
+                <a class="icon-btn" th:href="@{/profile}" aria-label="Your profile">
+                    <span class="avatar" th:text="${#strings.substring(principal.displayName(),0,1)}">U</span>
+                    <span th:text="${principal.displayName()}">User</span>
+                </a>
+            </div>
+        </header>
+
+        <div class="flash flash-success" role="status" th:if="${flash != null}" th:classappend="${flashType == 'error'} ? 'flash-error' : 'flash-success'">
+            <span aria-hidden="true" th:text="${flashType == 'error'} ? '⚠️' : '✓'">✓</span>
+            <span th:text="${flash}">Message</span>
+        </div>
+
+        <main class="content">
+            <th:block th:replace="${content}"/>
+        </main>
+
+        <footer style="text-align:center; color: var(--ink-400); font-size:0.8rem; padding: 0 1.75rem 1.6rem;">
+            <span th:text="${orgName}">Brightpath Academy</span> · Course &amp; assignment platform ·
+            Need help? <a th:href="|mailto:${supportEmail}|" th:text="${supportEmail}">support</a>
+        </footer>
+    </div>
+</div>
+<script th:src="@{/js/app.js(v=${assetVersion})}"></script>
+</body>
+</html>

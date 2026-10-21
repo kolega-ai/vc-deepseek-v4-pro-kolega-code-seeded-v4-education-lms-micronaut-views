@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('New user','users', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/admin/users}">Users</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span>New user</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker">Administration</div>
+            <h1>Create a user</h1>
+            <p class="sub">The new user receives a setup email with a single-use link to choose their password.</p>
+        </div>
+    </div>
+
+    <form class="form-card" th:action="@{/admin/users}" method="post">
+        <input type="hidden" name="_csrf" th:value="${csrf}">
+        <div class="field-row">
+            <div class="field">
+                <label for="displayName">Full name</label>
+                <input class="input" type="text" id="displayName" name="displayName" required maxlength="120">
+            </div>
+            <div class="field">
+                <label for="username">Username</label>
+                <input class="input" type="text" id="username" name="username" required
+                       pattern="[a-zA-Z0-9._-]{3,32}" title="3-32 characters: letters, numbers, dots, dashes, underscores">
+            </div>
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label for="email">Email</label>
+                <input class="input" type="email" id="email" name="email" required>
+            </div>
+            <div class="field">
+                <label for="role">Role</label>
+                <select class="select" id="role" name="role">
+                    <option th:each="r : ${roles}" th:value="${r}" th:text="${r}">ROLE</option>
+                </select>
+            </div>
+        </div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="enabled" name="enabled" value="true" checked>
+            <label for="enabled" style="margin: 0;">Account enabled</label>
+        </div>
+        <div class="form-actions">
+            <a class="btn btn-ghost" th:href="@{/admin/users}">Cancel</a>
+            <button class="btn btn-primary" type="submit">Create user</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

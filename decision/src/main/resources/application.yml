@@ -1,0 +1,38 @@
+micronaut:
+  application:
+    name: brightpath-decision
+  server:
+    port: ${DECISION_PORT:8081}
+  management:
+    endpoints:
+      health:
+        enabled: true
+datasources:
+  default:
+    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:5432/decision_db}
+    username: ${DATASOURCE_USERNAME:brightpath}
+    password: ${DATASOURCE_PASSWORD:brightpath_dev_password}
+    driver-class-name: org.postgresql.Driver
+    db-type: postgres
+flyway:
+  datasources:
+    default:
+      enabled: true
+jpa:
+  default:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        hbm2ddl:
+          auto: none
+        jdbc:
+          time_zone: UTC
+    entity-scan:
+      packages:
+        - com.brightpath.decision.domain
+brightpath:
+  decision:
+    internal-secret: ${DECISION_INTERNAL_SECRET:brightpath_internal_dev_secret}
+    session-signing-secret: ${SESSION_SIGNING_SECRET:brightpath_session_signing_dev_secret}
+    scope-token-secret: ${SCOPE_TOKEN_SECRET:brightpath_scope_token_dev_secret}
+    session-ttl: 8h

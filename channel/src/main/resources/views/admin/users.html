@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Users','users', ~{::main})}">
+<body>
+<main>
+    <div class="page-head">
+        <div>
+            <div class="kicker">Administration</div>
+            <h1>Users</h1>
+            <p class="sub">Search people, change roles, disable accounts and issue password resets.</p>
+        </div>
+        <a class="btn btn-primary" th:href="@{/admin/users/new}">Create user</a>
+    </div>
+
+    <div class="filter-bar">
+        <form th:action="@{/admin/users}" method="get">
+            <input class="input grow" type="search" name="q" th:value="${q}" placeholder="Search by name, username or email…" aria-label="Search users">
+            <select class="select" name="role" aria-label="Filter by role">
+                <option value="">All roles</option>
+                <option th:each="r : ${roles}" th:value="${r}" th:text="${r}" th:selected="${r == role}">ROLE</option>
+            </select>
+            <select class="select" name="enabled" aria-label="Filter by account status">
+                <option value="">Any status</option>
+                <option value="true" th:selected="${enabled == 'true'}">Enabled</option>
+                <option value="false" th:selected="${enabled == 'false'}">Disabled</option>
+            </select>
+            <button class="btn btn-primary" type="submit">Search</button>
+        </form>
+    </div>
+
+    <div class="empty" th:if="${users.isEmpty()}">
+        <span class="empty-ico" aria-hidden="true">🔍</span>
+        <h3>No users match</h3>
+    </div>
+
+    <div class="table-wrap" th:unless="${users.isEmpty()}">
+        <table class="data">
+            <thead>
+            <tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th>Created</th><th></th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="user : ${users}">
+                <td>
+                    <a class="cell-strong" th:href="@{/admin/users/{id}(id=${user.getId()})}" th:text="${user.getDisplayName()}">Name</a>
+                    <div class="cell-sub" th:text="${user.getEmail()}">email</div>
+                </td>
+                <td th:text="${user.getUsername()}">username</td>
+                <td><span class="badge badge-primary" th:text="${user.getRole()}">ROLE</span></td>
+                <td>
+                    <span class="badge badge-success" th:if="${user.isEnabled()}"><span class="dot"></span>Enabled</span>
+                    <span class="badge badge-danger" th:unless="${user.isEnabled()}"><span class="dot"></span>Disabled</span>
+                </td>
+                <td class="cell-sub" th:text="${#temporals.format(user.getCreatedAt(), 'MMM d, yyyy')}">date</td>
+                <td><a class="btn btn-secondary btn-sm" th:href="@{/admin/users/{id}(id=${user.getId()})}">Manage</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="pagination" th:if="${totalPages > 1}" aria-label="User pages">
+        <a th:href="@{/admin/users(page=${page - 1}, q=${q}, role=${role}, enabled=${enabled})}" th:if="${page > 0}" rel="prev">‹ Prev</a>
+        <span class="disabled" th:if="${page <= 0}">‹ Prev</span>
+        <span class="current" th:text="|Page ${page + 1} of ${totalPages}|">Page 1</span>
+        <a th:href="@{/admin/users(page=${page + 1}, q=${q}, role=${role}, enabled=${enabled})}" th:if="${page < totalPages - 1}" rel="next">Next ›</a>
+        <span class="disabled" th:if="${page >= totalPages - 1}">Next ›</span>
+    </nav>
+</main>
+</body>
+</html>

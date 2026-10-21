@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page(${user.getDisplayName()},'users', ~{::main})}">
+<body>
+<main>
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a th:href="@{/admin/users}">Users</a>
+        <span class="sep" aria-hidden="true">›</span>
+        <span th:text="${user.getUsername()}">user</span>
+    </nav>
+
+    <div class="page-head">
+        <div>
+            <div class="kicker">User record</div>
+            <h1 th:text="${user.getDisplayName()}">User</h1>
+            <p class="sub" th:text="|${user.getUsername()} · joined ${#temporals.format(user.getCreatedAt(), 'MMM d, yyyy')}|">meta</p>
+        </div>
+        <span>
+            <span class="badge badge-primary" th:text="${user.getRole()}">ROLE</span>
+            <span class="badge badge-success" th:if="${user.isEnabled()}"><span class="dot"></span>Enabled</span>
+            <span class="badge badge-danger" th:unless="${user.isEnabled()}"><span class="dot"></span>Disabled</span>
+        </span>
+    </div>
+
+    <div class="grid grid-main">
+        <section class="card">
+            <div class="card-head"><h2>Account details</h2></div>
+            <form th:action="@{/admin/users/{id}/edit(id=${user.getId()})}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <div class="field">
+                    <label for="displayName">Full name</label>
+                    <input class="input" type="text" id="displayName" name="displayName" required th:value="${user.getDisplayName()}">
+                </div>
+                <div class="field">
+                    <label for="email">Email</label>
+                    <input class="input" type="email" id="email" name="email" required th:value="${user.getEmail()}">
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label for="role">Role</label>
+                        <select class="select" id="role" name="role">
+                            <option th:each="r : ${roles}" th:value="${r}" th:text="${r}" th:selected="${r == user.getRole()}">ROLE</option>
+                        </select>
+                        <div class="hint">Role changes take effect on the user's next request.</div>
+                    </div>
+                    <div class="field">
+                        <label for="enabled">Account status</label>
+                        <select class="select" id="enabled" name="enabled">
+                            <option value="true" th:selected="${user.isEnabled()}">Enabled</option>
+                            <option value="false" th:selected="${!user.isEnabled()}">Disabled</option>
+                        </select>
+                        <div class="hint">Disabling signs the user out of all sessions.</div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" type="submit">Save changes</button>
+            </form>
+        </section>
+
+        <div>
+            <section class="card">
+                <div class="card-head"><h2>Support actions</h2></div>
+                <p class="cell-sub">No impersonation: support works on the user's record directly.</p>
+                <form method="post" th:action="@{/admin/users/{id}/reset-password(id=${user.getId()})}">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <button class="btn btn-secondary" type="submit">Issue password reset link</button>
+                </form>
+                <div class="hint" style="margin-top: 0.4rem;">The link is emailed to the user and shown once.</div>
+            </section>
+
+            <section class="card">
+                <div class="card-head"><h2>Enrollments</h2></div>
+                <div class="empty" th:if="${enrollmentRows.isEmpty()}">
+                    <span class="empty-ico" aria-hidden="true">📋</span>
+                    <h3>No enrollments</h3>
+                </div>
+                <div th:each="row : ${enrollmentRows}" style="padding: 0.45rem 0; border-bottom: 1px solid var(--ink-100);">
+                    <span class="cell-strong" th:text="${row.get('cohortName')}">Cohort</span>
+                    <span class="cell-sub" th:text="${row.get('courseTitle')}">course</span>
+                    <span class="badge badge-neutral" th:text="${row.get('status')}" style="margin-left: 0.5rem;">status</span>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+</body>
+</html>
